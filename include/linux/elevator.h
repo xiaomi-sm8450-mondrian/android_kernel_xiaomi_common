@@ -58,7 +58,7 @@ struct elevator_mq_ops {
 	ANDROID_KABI_RESERVE(4);
 };
 
-#define ELV_NAME_MAX	(16)
+#define ELV_NAME_MAX	(24)
 
 struct elv_fs_entry {
 	struct attribute attr;
