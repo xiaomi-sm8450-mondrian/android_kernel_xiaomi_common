@@ -10883,12 +10883,6 @@ static void nohz_newidle_balance(struct rq *this_rq)
 	 * before entering idle state.
 	 */
 	atomic_or(NOHZ_NEWILB_KICK, nohz_flags(this_cpu));
-
-        /*
-	 * Blocked load of idle CPUs need to be updated.
-	 * Kick an ILB to update statistics.
-	 */
-	kick_ilb(NOHZ_STATS_KICK);
 }
 
 #else /* !CONFIG_NO_HZ_COMMON */
