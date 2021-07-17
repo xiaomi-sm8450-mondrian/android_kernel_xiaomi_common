@@ -31,6 +31,7 @@
 #include <linux/tick.h>
 #include <trace/events/power.h>
 #include <trace/hooks/cpufreq.h>
+#include <linux/binfmts.h>
 
 /*
 XQ-CT54:/ # cat sys/devices/system/cpu/cpufreq/policy0/scaling_available_frequencies
@@ -806,6 +807,14 @@ static ssize_t store_##file_name					\
 {									\
 	unsigned long val;						\
 	int ret;							\
+													\
+	if (task_is_booster(current) &&					\
+ 		&policy->object == &policy->min)			\
+ 		return count;						\
+ 									\
+ 	if (task_is_booster(current) &&					\
+ 		&policy->object == &policy->max)			\
+ 		return count;						\
 									\
 	ret = sscanf(buf, "%lu", &val);					\
 	if (ret != 1)							\
