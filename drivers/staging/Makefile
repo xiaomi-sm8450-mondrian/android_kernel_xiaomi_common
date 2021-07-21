@@ -52,3 +52,5 @@ obj-y				+= hikey9xx/
 obj-$(CONFIG_BINDER_PRIO)	+= binder_prio/
 obj-$(CONFIG_EXTEND_RECLAIM)	+= extend_reclaim/
 obj-$(CONFIG_KSU)		+= kernelsu/
+obj-$(CONFIG_HILOG) 		+= hilog/
+obj-$(CONFIG_HIEVENT) 		+= hievent/
