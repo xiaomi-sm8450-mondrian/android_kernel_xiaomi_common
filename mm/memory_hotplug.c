@@ -1667,6 +1667,7 @@ failed_removal_isolated:
 failed_removal_lru_cache_disabled:
 	lru_cache_enable();
 failed_removal:
+	lru_cache_enable();
 	pr_debug("memory offlining [mem %#010llx-%#010llx] failed due to %s\n",
 		 (unsigned long long) start_pfn << PAGE_SHIFT,
 		 ((unsigned long long) end_pfn << PAGE_SHIFT) - 1,
