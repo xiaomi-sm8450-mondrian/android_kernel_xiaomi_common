@@ -899,6 +899,9 @@ config MAPPING_DIRTY_HELPERS
 config KMAP_LOCAL
 	bool
 
+config KMAP_LOCAL_NON_LINEAR_PTE_ARRAY
+	bool
+
 # multi-gen LRU {
 config LRU_GEN
 	bool "Multi-Gen LRU"
