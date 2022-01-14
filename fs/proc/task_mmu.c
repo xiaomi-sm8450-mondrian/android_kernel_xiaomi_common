@@ -529,6 +529,8 @@ bypass_orig_flow:
 
 	name = arch_vma_name(vma);
 	if (!name) {
+		const char *anon_name;
+
 		if (!mm) {
 			seq_write(m, "[vdso]\n", 7);
 			return;
@@ -541,8 +543,15 @@ bypass_orig_flow:
 		}
 
 		if (is_stack(vma)) {
-			seq_write(m, "[stack]\n", 8);
-			return;
+			if (is_stack(vma)) {
+			name = "[stack]";
+			goto done;
+		}
+
+		anon_name = vma_anon_name(vma);
+		if (anon_name) {
+			seq_pad(m, ' ');
+			seq_printf(m, "[anon:%s]", anon_name);
 		}
 
 		if (vma_get_anon_name(vma)) {
