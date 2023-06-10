@@ -469,6 +469,7 @@ config INET_DIAG_DESTROY
 
 menuconfig TCP_CONG_ADVANCED
 	bool "TCP: advanced congestion control"
+	default y
 	help
 	  Support for selection of various TCP congestion control
 	  modules.
@@ -666,7 +667,7 @@ config TCP_CONG_CDG
 
 config TCP_CONG_BBR
 	tristate "BBR TCP"
-	default n
+	default y
 	help
 
 	  BBR (Bottleneck Bandwidth and RTT) TCP congestion control is a
