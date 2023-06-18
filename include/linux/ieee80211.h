@@ -4674,6 +4674,28 @@ static inline bool ieee80211_mle_size_ok(const u8 *data, size_t len)
 	return mle->variable[0] >= common;
 }
 
+/**
+ * ieee80211_mle_type_ok - validate multi-link element type and size
+ * @data: pointer to the element data
+ * @type: expected type of the element
+ * @len: length of the containing element
+ */
+static inline bool ieee80211_mle_type_ok(const u8 *data, u8 type, size_t len)
+{
+	const struct ieee80211_multi_link_elem *mle = (const void *)data;
+	u16 control;
+
+	if (!ieee80211_mle_size_ok(data, len))
+		return false;
+
+	control = le16_to_cpu(mle->control);
+
+	if (u16_get_bits(control, IEEE80211_ML_CONTROL_TYPE) == type)
+		return true;
+
+	return false;
+}
+
 enum ieee80211_mle_subelems {
 	IEEE80211_MLE_SUBELEM_PER_STA_PROFILE		= 0,
 	IEEE80211_MLE_SUBELEM_FRAGMENT		        = 254,
