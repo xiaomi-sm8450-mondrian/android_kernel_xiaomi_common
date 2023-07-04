@@ -2245,7 +2245,10 @@ wma_wow_get_pkt_proto_subtype(uint8_t *data, uint32_t len)
 	}
 }
 
-static void wma_log_pkt_eapol(uint8_t *data, uint32_t length)
+
+extern int cnss_statistic_wow_wakeup(u16 proto_subtype, u16 src_port, u16 target_port);
+
+static void wma_log_pkt_eapol(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len, key_len;
 
@@ -2256,9 +2259,10 @@ static void wma_log_pkt_eapol(uint8_t *data, uint32_t length)
 	key_len = *(uint16_t *)(data + EAPOL_KEY_LEN_OFFSET);
 	wma_debug("Pkt_len: %u, Key_len: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(key_len));
+	cnss_statistic_wow_wakeup(proto_subtype, 0, 0);
 }
 
-static void wma_log_pkt_dhcp(uint8_t *data, uint32_t length)
+static void wma_log_pkt_dhcp(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len;
 	uint32_t trans_id;
@@ -2270,9 +2274,10 @@ static void wma_log_pkt_dhcp(uint8_t *data, uint32_t length)
 	trans_id = *(uint32_t *)(data + DHCP_TRANSACTION_ID_OFFSET);
 	wma_debug("Pkt_len: %u, Transaction_id: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(trans_id));
+	cnss_statistic_wow_wakeup(proto_subtype, 0, 0);
 }
 
-static void wma_log_pkt_icmpv4(uint8_t *data, uint32_t length)
+static void wma_log_pkt_icmpv4(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len, seq_num;
 
@@ -2283,9 +2288,10 @@ static void wma_log_pkt_icmpv4(uint8_t *data, uint32_t length)
 	seq_num = *(uint16_t *)(data + ICMP_SEQ_NUM_OFFSET);
 	wma_debug("Pkt_len: %u, Seq_num: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(seq_num));
+	cnss_statistic_wow_wakeup(proto_subtype, 0, 0);
 }
 
-static void wma_log_pkt_icmpv6(uint8_t *data, uint32_t length)
+static void wma_log_pkt_icmpv6(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len, seq_num;
 
@@ -2296,9 +2302,10 @@ static void wma_log_pkt_icmpv6(uint8_t *data, uint32_t length)
 	seq_num = *(uint16_t *)(data + ICMPV6_SEQ_NUM_OFFSET);
 	wma_debug("Pkt_len: %u, Seq_num: %u",
 		 qdf_cpu_to_be16(pkt_len), qdf_cpu_to_be16(seq_num));
+	cnss_statistic_wow_wakeup(proto_subtype, 0, 0);
 }
 
-static void wma_log_pkt_ipv4(uint8_t *data, uint32_t length)
+static void wma_log_pkt_ipv4(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len, src_port, dst_port;
 	char *ip_addr;
@@ -2319,9 +2326,10 @@ static void wma_log_pkt_ipv4(uint8_t *data, uint32_t length)
 		qdf_cpu_to_be16(pkt_len),
 		qdf_cpu_to_be16(src_port),
 		qdf_cpu_to_be16(dst_port));
+	cnss_statistic_wow_wakeup(proto_subtype, qdf_cpu_to_be16(src_port), qdf_cpu_to_be16(dst_port));
 }
 
-static void wma_log_pkt_ipv6(uint8_t *data, uint32_t length)
+static void wma_log_pkt_ipv6(uint8_t *data, uint32_t length, enum qdf_proto_subtype proto_subtype)
 {
 	uint16_t pkt_len, src_port, dst_port;
 	char *ip_addr;
@@ -2350,6 +2358,7 @@ static void wma_log_pkt_ipv6(uint8_t *data, uint32_t length)
 		 qdf_cpu_to_be16(pkt_len),
 		 qdf_cpu_to_be16(src_port),
 		 qdf_cpu_to_be16(dst_port));
+	cnss_statistic_wow_wakeup(proto_subtype, qdf_cpu_to_be16(src_port), qdf_cpu_to_be16(dst_port));
 }
 
 static void wma_log_pkt_tcpv4(uint8_t *data, uint32_t length)
@@ -2437,7 +2446,7 @@ static void wma_wow_parse_data_pkt(t_wma_handle *wma,
 	case QDF_PROTO_EAPOL_M2:
 	case QDF_PROTO_EAPOL_M3:
 	case QDF_PROTO_EAPOL_M4:
-		wma_log_pkt_eapol(data, length);
+		wma_log_pkt_eapol(data, length, proto_subtype);
 		break;
 
 	case QDF_PROTO_DHCP_DISCOVER:
@@ -2448,14 +2457,14 @@ static void wma_wow_parse_data_pkt(t_wma_handle *wma,
 	case QDF_PROTO_DHCP_RELEASE:
 	case QDF_PROTO_DHCP_INFORM:
 	case QDF_PROTO_DHCP_DECLINE:
-		wma_log_pkt_dhcp(data, length);
+		wma_log_pkt_dhcp(data, length, proto_subtype);
 		break;
 
 	case QDF_PROTO_ICMP_REQ:
 	case QDF_PROTO_ICMP_RES:
 		wma_wow_inc_wake_lock_stats_by_protocol(wma, vdev_id,
 							proto_subtype);
-		wma_log_pkt_icmpv4(data, length);
+		wma_log_pkt_icmpv4(data, length, proto_subtype);
 		break;
 
 	case QDF_PROTO_ICMPV6_REQ:
@@ -2466,22 +2475,22 @@ static void wma_wow_parse_data_pkt(t_wma_handle *wma,
 	case QDF_PROTO_ICMPV6_NA:
 		wma_wow_inc_wake_lock_stats_by_protocol(wma, vdev_id,
 							proto_subtype);
-		wma_log_pkt_icmpv6(data, length);
+		wma_log_pkt_icmpv6(data, length, proto_subtype);
 		break;
 
 	case QDF_PROTO_IPV4_UDP:
-		wma_log_pkt_ipv4(data, length);
+		wma_log_pkt_ipv4(data, length, proto_subtype);
 		break;
 	case QDF_PROTO_IPV4_TCP:
-		wma_log_pkt_ipv4(data, length);
+		wma_log_pkt_ipv4(data, length, proto_subtype);
 		wma_log_pkt_tcpv4(data, length);
 		break;
 
 	case QDF_PROTO_IPV6_UDP:
-		wma_log_pkt_ipv6(data, length);
+		wma_log_pkt_ipv6(data, length, proto_subtype);
 		break;
 	case QDF_PROTO_IPV6_TCP:
-		wma_log_pkt_ipv6(data, length);
+		wma_log_pkt_ipv6(data, length, proto_subtype);
 		wma_log_pkt_tcpv6(data, length);
 		break;
 	default:
