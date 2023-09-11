@@ -93,17 +93,6 @@ struct lruvec_stat {
 };
 
 /*
- * Bitmap and deferred work of shrinker::id corresponding to memcg-aware
- * shrinkers, which have elements charged to this memcg.
- */
-struct shrinker_info {
-	struct rcu_head rcu;
-	atomic_long_t *nr_deferred;
-	unsigned long *map;
-	int map_nr_max;
-};
-
-/*
  * per-node information in memory controller.
  */
 struct mem_cgroup_per_node {
