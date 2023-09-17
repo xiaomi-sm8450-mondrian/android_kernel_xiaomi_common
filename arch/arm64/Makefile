@@ -52,8 +52,10 @@ ifeq ($(CONFIG_LD_IS_LLD), y)
 KBUILD_LDFLAGS  += -mllvm -mcpu=cortex-a55
 endif
 
+ifeq ($(shell test $(CONFIG_CLANG_VERSION) -gt 130000 2>/dev/null; echo $$?),0)
 # Optimize for Qualcomm WAIPIO family
 KBUILD_CFLAGS	+= -march=armv9-a+crypto+nosve -mcpu=cortex-a510
+endif
 
 KBUILD_CFLAGS	+= -mgeneral-regs-only	\
 		   $(compat_vdso) $(cc_has_k_constraint)
