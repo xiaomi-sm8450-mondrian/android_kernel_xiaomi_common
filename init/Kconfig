@@ -2568,5 +2568,12 @@ config ARCH_HAS_SYNC_CORE_BEFORE_USERMODE
 config ARCH_HAS_SYSCALL_WRAPPER
 	def_bool n
 
+config IRQ_CRITICAL_AFFINE
+	bool "IRQ Critical Affine"
+	depends on !IRQ_SBALANCE
+	default y
+	help
+	  This IRQ Critical affine cpumask.
+
 source "init/Kconfig.gki"
 source "init/Kconfig.gki-debug"
