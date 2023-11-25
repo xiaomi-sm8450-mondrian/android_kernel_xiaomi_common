@@ -109,7 +109,7 @@ const_debug unsigned int sysctl_sched_migration_cost	= 250000UL;
 #else
 unsigned int sysctl_sched_wakeup_granularity			= 1000000UL;
 static unsigned int normalized_sysctl_sched_wakeup_granularity	= 1000000UL;
-const_debug unsigned int sysctl_sched_migration_cost	= 75000UL;
+const_debug unsigned int sysctl_sched_migration_cost	= 0UL;
 #endif
 
 int sched_thermal_decay_shift;
