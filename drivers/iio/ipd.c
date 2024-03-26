@@ -617,8 +617,8 @@ static void ipd_update_y_z_axis(struct ipd_data *ipd, int step)
 	/*Read Y axis */
 	status = ipd_read_axis_u(ipd, IPD_REG_WORD_ST_Y, &readValue);
 	if (ipd->enable_print)
-		pr_info("[ipd] Y raw readValue=%d\n", readValue >= MIN_READ_VALUE ?
-			readValue - MAX_READ_VALUE : readValue);
+		pr_info("[ipd] Y raw readValue=%d\n",
+			readValue >= MIN_READ_VALUE ? readValue - MAX_READ_VALUE : readValue);
 
 	ipd->BOPYbits = readValue + 400;
 	ipd->BRPYbits = readValue + 250;
@@ -629,8 +629,8 @@ static void ipd_update_y_z_axis(struct ipd_data *ipd, int step)
 	/*Read Z axis */
 	status = ipd_read_axis_u(ipd, IPD_REG_WORD_ST_Z, &readValue);
 	if (ipd->enable_print)
-		pr_info("[ipd] Z raw readValue=%d\n", readValue >= MIN_READ_VALUE ?
-				readValue - MAX_READ_VALUE : readValue);
+		pr_info("[ipd] Z raw readValue=%d\n",
+			readValue >= MIN_READ_VALUE ? readValue - MAX_READ_VALUE : readValue);
 	ipd->BOPZbits = readValue + 760;
 	ipd->BRPZbits = readValue + 610;
 	status = ipd_i2c_write16(ipd->client, IPD_REG_THZ,
@@ -773,9 +773,8 @@ static int ipd_setup(struct i2c_client *client)
 	ipd->client = client;
 	step = ipd_compute_step(ipd);
 
-	/*Based in device type,
-	 * We need update or skip updating BOPX/BRPX/BOPZ/BRPZ
-	 */
+	/*On device type,We need update or skip updating BOPX/BRPX/BOPZ/BRPZ*/
+
 	if (ipd->device_type == SKU1_SKU2_DEV_ID) {
 		/*Update X and Z axis*/
 		ipd_update_x_z_axis(ipd, step);
