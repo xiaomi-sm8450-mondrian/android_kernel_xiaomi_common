@@ -70,6 +70,20 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+# Skip certain kinds of commit.
+if [ $("${GIT}" -C "${DIR}" show --no-patch --format="%p" ${GIT_SHA1} | wc -w) -gt 1 ] ; then
+  echo "Merge commit detected for "${DIR}". Skipping this check."
+  exit 0
+fi
+SUBJECT=$("${GIT}" -C "${DIR}" show --no-patch --format="%s" ${GIT_SHA1})
+if [[ "$SUBJECT" =~ ^UPSTREAM|^BACKPORT|^FROMGIT ]]; then
+  echo "Not linting upstream patches for "${DIR}". Skipping this check."
+  exit 0
+fi
+if [[ "$SUBJECT" =~ ^Revert|^Reapply ]]; then
+  echo "Not linting revert/reapply patches for "${DIR}". Skipping this check."
+  exit 0
+fi
 
 # Clean up from any previous run.
 if [[ -d "${PATCH_DIR}" ]]; then
