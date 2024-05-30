@@ -14,6 +14,7 @@
 #include <linux/string.h>
 #include <linux/sys_soc.h>
 #include <linux/types.h>
+#include <linux/of.h>
 #include <soc/qcom/socinfo.h>
 #include <asm/unaligned.h>
 
@@ -231,6 +232,9 @@ static struct socinfo {
 } *socinfo;
 
 #define MAX_SOCINFO_ATTRS 50
+
+static const char *machine_name_buf = NULL;
+
 /* sysfs attributes */
 #define ATTR_DEFINE(param)	\
 	static DEVICE_ATTR(param, 0444,	\
@@ -275,6 +279,7 @@ static struct socinfo {
 #define SMEM_IMAGE_VERSION_OEM_SIZE 33
 #define SMEM_IMAGE_VERSION_OEM_OFFSET 95
 #define SMEM_IMAGE_VERSION_PARTITION_APPS 10
+#define SMEM_IMAGE_MACHINE_NAME_SIZE 75
 
 /* Version 2 */
 static uint32_t socinfo_get_raw_id(void)
@@ -621,8 +626,9 @@ msm_get_serial_number(struct device *dev,
 			struct device_attribute *attr,
 			char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%u\n",
-		socinfo_get_serial_number());
+	uint64_t serial_num_h = socinfo_get_nproduct_id();
+	return snprintf(buf, PAGE_SIZE, "0x%016llx\n",
+		serial_num_h*0x100000000ULL + socinfo_get_serial_number());
 }
 ATTR_DEFINE(serial_number);
 
@@ -1285,6 +1291,18 @@ msm_get_images(struct device *dev,
 	return pos;
 }
 
+static ssize_t
+msm_get_machine_name(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
+{
+	int ret;
+
+	ret = snprintf(buf, SMEM_IMAGE_MACHINE_NAME_SIZE, "%s\n", machine_name_buf);
+	return ret;
+
+}
+
 static struct device_attribute image_version =
 	__ATTR(image_version, 0644,
 			msm_get_image_version, msm_set_image_version);
@@ -1303,6 +1321,9 @@ static struct device_attribute select_image =
 
 static struct device_attribute images =
 	__ATTR(images, 0444, msm_get_images, NULL);
+
+static struct device_attribute machine_name =
+	__ATTR(machine_name, 0444, msm_get_machine_name, NULL);
 
 
 static umode_t soc_info_attribute(struct kobject *kobj,
@@ -1403,6 +1424,7 @@ static void socinfo_populate_sysfs(struct qcom_socinfo *qcom_socinfo)
 	msm_custom_socinfo_attrs[i++] = &image_crm_version.attr;
 	msm_custom_socinfo_attrs[i++] = &select_image.attr;
 	msm_custom_socinfo_attrs[i++] = &images.attr;
+	msm_custom_socinfo_attrs[i++] = &machine_name.attr;
 	msm_custom_socinfo_attrs[i++] = NULL;
 	qcom_socinfo->attr.custom_attr_group = &custom_soc_attr_group;
 }
@@ -1680,12 +1702,33 @@ int socinfo_get_oem_variant_id(void)
 }
 EXPORT_SYMBOL(socinfo_get_oem_variant_id);
 
+static const char *of_parse_machine_name(void)
+{
+	struct device_node *root;
+	const char *machine_name = NULL;
+
+	root = of_find_node_by_path("/");
+	if (!root)
+		return NULL;
+	of_property_read_string(root, "model", &machine_name);
+	if (!machine_name)
+		of_property_read_string(root, "compatible", &machine_name);
+
+	return machine_name;
+}
+
 static int qcom_socinfo_probe(struct platform_device *pdev)
 {
 	struct qcom_socinfo *qs;
 	struct socinfo *info;
 	size_t item_size;
 	const char *machine, *esku;
+
+	machine_name_buf = of_parse_machine_name();
+	if (IS_ERR(machine_name_buf)) {
+		dev_err(&pdev->dev, "Couldn't find machine name\n");
+		return PTR_ERR(machine_name_buf);
+	}
 
 	info = qcom_smem_get(QCOM_SMEM_HOST_ANY, SMEM_HW_SW_BUILD_ID,
 			      &item_size);
@@ -1708,16 +1751,20 @@ static int qcom_socinfo_probe(struct platform_device *pdev)
 	qs->attr.revision = devm_kasprintf(&pdev->dev, GFP_KERNEL, "%u.%u",
 					   SOCINFO_MAJOR(le32_to_cpu(info->ver)),
 					   SOCINFO_MINOR(le32_to_cpu(info->ver)));
-	if (!qs->attr.soc_id || !qs->attr.revision)
-		return -ENOMEM;
+	qs->attr.soc_id = kasprintf(GFP_KERNEL, "%d", socinfo_get_id());
 
-	if (offsetof(struct socinfo, serial_num) <= item_size) {
-		qs->attr.serial_number = devm_kasprintf(&pdev->dev, GFP_KERNEL,
-							"%u",
-							le32_to_cpu(info->serial_num));
-		if (!qs->attr.serial_number)
-			return -ENOMEM;
+	if (socinfo_format >= SOCINFO_VERSION(0, 16)) {
+		machine = socinfo_machine(le32_to_cpu(info->id));
+		esku = socinfo_get_esku_mapping();
+		if (machine && esku)
+			sku = devm_kasprintf(&pdev->dev, GFP_KERNEL, "%s-%u-%s",
+				machine, socinfo_get_nproduct_code(), esku);
 	}
+
+	qsocinfo = qs;
+	init_rwsem(&qs->current_image_rwsem);
+	socinfo_populate_sysfs(qs);
+	socinfo_print();
 
 	qs->soc_dev = soc_device_register(&qs->attr);
 	if (IS_ERR(qs->soc_dev))
