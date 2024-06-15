@@ -735,7 +735,7 @@ if [ -n "${SKIP_IF_VERSION_MATCHES}" ]; then
     # Split grep into 2 steps. "Linux version" will always be towards top and fast to find. Don't
     # need to search the entire vmlinux for it
     if [[ ! "$kernelversion" =~ .*dirty.* ]] && \
-       grep -o -a -m1 "Linux version [^ ]* " ${DIST_DIR}/vmlinux | grep -q " ${kernelversion} " ; then
+       grep -o -a -m2 "Linux version [^ ]* " ${DIST_DIR}/vmlinux | grep -q " ${kernelversion} " ; then
       echo "========================================================"
       echo " Skipping build because kernel version matches ${kernelversion}"
       exit 0
