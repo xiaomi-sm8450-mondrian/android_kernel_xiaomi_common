@@ -3,7 +3,7 @@
  * cfg80211 wext compat for managed mode.
  *
  * Copyright 2009	Johannes Berg <johannes@sipsolutions.net>
- * Copyright (C) 2009, 2020-2022 Intel Corporation
+ * Copyright (C) 2009, 2020-2023 Intel Corporation
  */
 
 #include <linux/export.h>
@@ -47,7 +47,7 @@ int cfg80211_mgd_wext_connect(struct cfg80211_registered_device *rdev,
 		ck = kmemdup(wdev->wext.keys, sizeof(*ck), GFP_KERNEL);
 		if (!ck)
 			return -ENOMEM;
-		for (i = 0; i < CFG80211_MAX_WEP_KEYS; i++)
+		for (i = 0; i < 4; i++)
 			ck->params[i].key = ck->data[i];
 	}
 
@@ -337,6 +337,7 @@ int cfg80211_wext_siwgenie(struct net_device *dev,
 	if (!ie_len)
 		ie = NULL;
 
+	wiphy_lock(wdev->wiphy);
 	wdev_lock(wdev);
 
 	/* no change */
@@ -369,6 +370,7 @@ int cfg80211_wext_siwgenie(struct net_device *dev,
 	err = 0;
  out:
 	wdev_unlock(wdev);
+	wiphy_unlock(wdev->wiphy);
 	return err;
 }
 

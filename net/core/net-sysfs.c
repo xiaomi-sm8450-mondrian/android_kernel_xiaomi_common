@@ -724,14 +724,10 @@ static const struct attribute_group wireless_group = {
 
 static bool wireless_group_needed(struct net_device *ndev)
 {
-#if IS_ENABLED(CONFIG_CFG80211)
 	if (ndev->ieee80211_ptr)
 		return true;
-#endif
-#if IS_ENABLED(CONFIG_WIRELESS_EXT)
 	if (ndev->wireless_handlers)
 		return true;
-#endif
 	return false;
 }
 
@@ -1897,16 +1893,16 @@ static void netdev_release(struct device *d)
 	netdev_freemem(dev);
 }
 
-static const void *net_namespace(struct device *d)
+static const void *net_namespace(const struct device *d)
 {
-	struct net_device *dev = to_net_dev(d);
+	const struct net_device *dev = to_net_dev(d);
 
 	return dev_net(dev);
 }
 
-static void net_get_ownership(struct device *d, kuid_t *uid, kgid_t *gid)
+static void net_get_ownership(const struct device *d, kuid_t *uid, kgid_t *gid)
 {
-	struct net_device *dev = to_net_dev(d);
+	const struct net_device *dev = to_net_dev(d);
 	const struct net *net = dev_net(dev);
 
 	net_ns_get_ownership(net, uid, gid);

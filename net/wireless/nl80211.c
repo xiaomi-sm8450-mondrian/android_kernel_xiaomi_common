@@ -5,7 +5,7 @@
  * Copyright 2006-2010	Johannes Berg <johannes@sipsolutions.net>
  * Copyright 2013-2014  Intel Mobile Communications GmbH
  * Copyright 2015-2017	Intel Deutschland GmbH
- * Copyright (C) 2018-2022 Intel Corporation
+ * Copyright (C) 2018-2023 Intel Corporation
  */
 
 #include <linux/if.h>
@@ -323,6 +323,7 @@ nl80211_pmsr_ftm_req_attr_policy[NL80211_PMSR_FTM_REQ_ATTR_MAX + 1] = {
 	[NL80211_PMSR_FTM_REQ_ATTR_TRIGGER_BASED] = { .type = NLA_FLAG },
 	[NL80211_PMSR_FTM_REQ_ATTR_NON_TRIGGER_BASED] = { .type = NLA_FLAG },
 	[NL80211_PMSR_FTM_REQ_ATTR_LMR_FEEDBACK] = { .type = NLA_FLAG },
+	[NL80211_PMSR_FTM_REQ_ATTR_BSS_COLOR] = { .type = NLA_U8 },
 };
 
 static const struct nla_policy
@@ -812,6 +813,14 @@ static const struct nla_policy nl80211_policy[NUM_NL80211_ATTR] = {
 	[NL80211_ATTR_MAX_NUM_AKM_SUITES] = { .type = NLA_REJECT },
 	[NL80211_ATTR_PUNCT_BITMAP] =
 		NLA_POLICY_FULL_RANGE(NLA_U32, &nl80211_punct_bitmap_range),
+
+	[NL80211_ATTR_MAX_HW_TIMESTAMP_PEERS] = { .type = NLA_U16 },
+	[NL80211_ATTR_HW_TIMESTAMP_ENABLED] = { .type = NLA_FLAG },
+	[NL80211_ATTR_EMA_RNR_ELEMS] = { .type = NLA_NESTED },
+	[NL80211_ATTR_MLO_LINK_DISABLED] = { .type = NLA_FLAG },
+	[NL80211_ATTR_BSS_DUMP_INCLUDE_USE_DATA] = { .type = NLA_FLAG },
+	[NL80211_ATTR_MLO_TTLM_DLINK] = NLA_POLICY_EXACT_LEN(sizeof(u16) * 8),
+	[NL80211_ATTR_MLO_TTLM_ULINK] = NLA_POLICY_EXACT_LEN(sizeof(u16) * 8),
 };
 
 /* policy for the key attributes */
@@ -1109,6 +1118,10 @@ static int nl80211_msg_put_channel(struct sk_buff *msg, struct wiphy *wiphy,
 	if (nla_put_u32(msg, NL80211_FREQUENCY_ATTR_OFFSET, chan->freq_offset))
 		goto nla_put_failure;
 
+	if ((chan->flags & IEEE80211_CHAN_PSD) &&
+	    nla_put_s8(msg, NL80211_FREQUENCY_ATTR_PSD, chan->psd))
+		goto nla_put_failure;
+
 	if ((chan->flags & IEEE80211_CHAN_DISABLED) &&
 	    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_DISABLED))
 		goto nla_put_failure;
@@ -1187,6 +1200,15 @@ static int nl80211_msg_put_channel(struct sk_buff *msg, struct wiphy *wiphy,
 			goto nla_put_failure;
 		if ((chan->flags & IEEE80211_CHAN_NO_EHT) &&
 		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_EHT))
+			goto nla_put_failure;
+		if ((chan->flags & IEEE80211_CHAN_DFS_CONCURRENT) &&
+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_DFS_CONCURRENT))
+			goto nla_put_failure;
+		if ((chan->flags & IEEE80211_CHAN_NO_6GHZ_VLP_CLIENT) &&
+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_6GHZ_VLP_CLIENT))
+			goto nla_put_failure;
+		if ((chan->flags & IEEE80211_CHAN_NO_6GHZ_AFC_CLIENT) &&
+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_6GHZ_AFC_CLIENT))
 			goto nla_put_failure;
 	}
 
@@ -1962,6 +1984,16 @@ static int nl80211_send_band_rateinfo(struct sk_buff *msg,
 	}
 
 	nla_nest_end(msg, nl_rates);
+
+	/* S1G capabilities */
+	if (sband->band == NL80211_BAND_S1GHZ && sband->s1g_cap.s1g &&
+	    (nla_put(msg, NL80211_BAND_ATTR_S1G_CAPA,
+		     sizeof(sband->s1g_cap.cap),
+		     sband->s1g_cap.cap) ||
+	     nla_put(msg, NL80211_BAND_ATTR_S1G_MCS_NSS_SET,
+		     sizeof(sband->s1g_cap.nss_mcs),
+		     sband->s1g_cap.nss_mcs)))
+		return -ENOBUFS;
 
 	return 0;
 }
@@ -2970,6 +3002,11 @@ static int nl80211_send_wiphy(struct cfg80211_registered_device *rdev,
 		if (rdev->wiphy.flags & WIPHY_FLAG_SUPPORTS_MLO)
 			nla_put_flag(msg, NL80211_ATTR_MLO_SUPPORT);
 
+		if (rdev->wiphy.hw_timestamp_max_peers &&
+		    nla_put_u16(msg, NL80211_ATTR_MAX_HW_TIMESTAMP_PEERS,
+				rdev->wiphy.hw_timestamp_max_peers))
+			goto nla_put_failure;
+
 		/* done */
 		state->split_start = 0;
 		break;
@@ -3062,6 +3099,7 @@ static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callback *cb)
 		if (state->filter_wiphy != -1 &&
 		    state->filter_wiphy != rdev->wiphy_idx)
 			continue;
+		wiphy_lock(&rdev->wiphy);
 		/* attempt to fit multiple wiphy data chunks into the skb */
 		do {
 			ret = nl80211_send_wiphy(rdev, NL80211_CMD_NEW_WIPHY,
@@ -3088,6 +3126,7 @@ static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callback *cb)
 				    cb->min_dump_alloc < 4096) {
 					cb->min_dump_alloc = 4096;
 					state->split_start = 0;
+					wiphy_unlock(&rdev->wiphy);
 					rtnl_unlock();
 					return 1;
 				}
@@ -3095,6 +3134,7 @@ static int nl80211_dump_wiphy(struct sk_buff *skb, struct netlink_callback *cb)
 				break;
 			}
 		} while (state->split_start > 0);
+		wiphy_unlock(&rdev->wiphy);
 		break;
 	}
 	rtnl_unlock();
@@ -3207,8 +3247,11 @@ int nl80211_parse_chandef(struct cfg80211_registered_device *rdev,
 	struct nlattr **attrs = info->attrs;
 	u32 control_freq;
 
-	if (!attrs[NL80211_ATTR_WIPHY_FREQ])
+	if (!attrs[NL80211_ATTR_WIPHY_FREQ]) {
+		NL_SET_ERR_MSG_ATTR(extack, attrs[NL80211_ATTR_WIPHY_FREQ],
+				    "Frequency is missing");
 		return -EINVAL;
+	}
 
 	control_freq = MHZ_TO_KHZ(
 			nla_get_u32(info->attrs[NL80211_ATTR_WIPHY_FREQ]));
@@ -3759,8 +3802,7 @@ out:
 	return result;
 }
 
-static int nl80211_send_chandef(struct sk_buff *msg,
-				const struct cfg80211_chan_def *chandef)
+int nl80211_send_chandef(struct sk_buff *msg, const struct cfg80211_chan_def *chandef)
 {
 	if (WARN_ON(!cfg80211_chandef_valid(chandef)))
 		return -EINVAL;
@@ -3791,6 +3833,7 @@ static int nl80211_send_chandef(struct sk_buff *msg,
 		return -ENOBUFS;
 	return 0;
 }
+EXPORT_SYMBOL(nl80211_send_chandef);
 
 static int nl80211_send_iface(struct sk_buff *msg, u32 portid, u32 seq, int flags,
 			      struct cfg80211_registered_device *rdev,
@@ -4866,13 +4909,12 @@ static struct cfg80211_acl_data *parse_acl_data(struct wiphy *wiphy,
 	acl = kzalloc(struct_size(acl, mac_addrs, n_entries), GFP_KERNEL);
 	if (!acl)
 		return ERR_PTR(-ENOMEM);
+	acl->n_acl_entries = n_entries;
 
 	nla_for_each_nested(attr, info->attrs[NL80211_ATTR_MAC_ADDRS], tmp) {
 		memcpy(acl->mac_addrs[i].addr, nla_data(attr), ETH_ALEN);
 		i++;
 	}
-
-	acl->n_acl_entries = n_entries;
 	acl->acl_policy = acl_policy;
 
 	return acl;
@@ -5407,19 +5449,54 @@ nl80211_parse_mbssid_elems(struct wiphy *wiphy, struct nlattr *attrs)
 	if (!wiphy->mbssid_max_interfaces)
 		return ERR_PTR(-EINVAL);
 
-	nla_for_each_nested(nl_elems, attrs, rem_elems)
+	nla_for_each_nested(nl_elems, attrs, rem_elems) {
+		if (num_elems >= 255)
+			return ERR_PTR(-EINVAL);
 		num_elems++;
+	}
 
 	elems = kzalloc(struct_size(elems, elem, num_elems), GFP_KERNEL);
 	if (!elems)
 		return ERR_PTR(-ENOMEM);
+	elems->cnt = num_elems;
 
 	nla_for_each_nested(nl_elems, attrs, rem_elems) {
 		elems->elem[i].data = nla_data(nl_elems);
 		elems->elem[i].len = nla_len(nl_elems);
 		i++;
 	}
+	return elems;
+}
+
+static struct cfg80211_rnr_elems *
+nl80211_parse_rnr_elems(struct wiphy *wiphy, struct nlattr *attrs,
+			struct netlink_ext_ack *extack)
+{
+	struct nlattr *nl_elems;
+	struct cfg80211_rnr_elems *elems;
+	int rem_elems;
+	u8 i = 0, num_elems = 0;
+
+	nla_for_each_nested(nl_elems, attrs, rem_elems) {
+		int ret;
+
+		ret = validate_ie_attr(nl_elems, extack);
+		if (ret)
+			return ERR_PTR(ret);
+
+		num_elems++;
+	}
+
+	elems = kzalloc(struct_size(elems, elem, num_elems), GFP_KERNEL);
+	if (!elems)
+		return ERR_PTR(-ENOMEM);
 	elems->cnt = num_elems;
+
+	nla_for_each_nested(nl_elems, attrs, rem_elems) {
+		elems->elem[i].data = nla_data(nl_elems);
+		elems->elem[i].len = nla_len(nl_elems);
+		i++;
+	}
 	return elems;
 }
 
@@ -5449,7 +5526,8 @@ static int nl80211_parse_he_bss_color(struct nlattr *attrs,
 
 static int nl80211_parse_beacon(struct cfg80211_registered_device *rdev,
 				struct nlattr *attrs[],
-				struct cfg80211_beacon_data *bcn)
+				struct cfg80211_beacon_data *bcn,
+				struct netlink_ext_ack *extack)
 {
 	bool haveinfo = false;
 	int err;
@@ -5546,6 +5624,21 @@ static int nl80211_parse_beacon(struct cfg80211_registered_device *rdev,
 			return PTR_ERR(mbssid);
 
 		bcn->mbssid_ies = mbssid;
+
+		if (bcn->mbssid_ies && attrs[NL80211_ATTR_EMA_RNR_ELEMS]) {
+			struct cfg80211_rnr_elems *rnr =
+				nl80211_parse_rnr_elems(&rdev->wiphy,
+							attrs[NL80211_ATTR_EMA_RNR_ELEMS],
+							extack);
+
+			if (IS_ERR(rnr))
+				return PTR_ERR(rnr);
+
+			if (rnr && rnr->cnt < bcn->mbssid_ies->cnt)
+				return -EINVAL;
+
+			bcn->rnr_ies = rnr;
+		}
 	}
 
 	return 0;
@@ -5799,6 +5892,57 @@ static bool nl80211_valid_auth_type(struct cfg80211_registered_device *rdev,
 	}
 }
 
+static void nl80211_send_ap_started(struct wireless_dev *wdev,
+				    unsigned int link_id)
+{
+	struct wiphy *wiphy = wdev->wiphy;
+	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wiphy);
+	struct sk_buff *msg;
+	void *hdr;
+
+	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
+	if (!msg)
+		return;
+
+	hdr = nl80211hdr_put(msg, 0, 0, 0, NL80211_CMD_START_AP);
+	if (!hdr)
+		goto out;
+
+	if (nla_put_u32(msg, NL80211_ATTR_WIPHY, rdev->wiphy_idx) ||
+	    nla_put_u32(msg, NL80211_ATTR_IFINDEX, wdev->netdev->ifindex) ||
+	    nla_put_u64_64bit(msg, NL80211_ATTR_WDEV, wdev_id(wdev),
+			      NL80211_ATTR_PAD) ||
+	    (wdev->u.ap.ssid_len &&
+	     nla_put(msg, NL80211_ATTR_SSID, wdev->u.ap.ssid_len,
+		     wdev->u.ap.ssid)) ||
+	    (wdev->valid_links &&
+	     nla_put_u8(msg, NL80211_ATTR_MLO_LINK_ID, link_id)))
+		goto out;
+
+	genlmsg_end(msg, hdr);
+
+	genlmsg_multicast_netns(&nl80211_fam, wiphy_net(wiphy), msg, 0,
+				NL80211_MCGRP_MLME, GFP_KERNEL);
+	return;
+out:
+	nlmsg_free(msg);
+}
+
+static int nl80211_validate_ap_phy_operation(struct cfg80211_ap_settings *params)
+{
+	struct ieee80211_channel *channel = params->chandef.chan;
+
+	if ((params->he_cap ||  params->he_oper) &&
+	    (channel->flags & IEEE80211_CHAN_NO_HE))
+		return -EOPNOTSUPP;
+
+	if ((params->eht_cap || params->eht_oper) &&
+	    (channel->flags & IEEE80211_CHAN_NO_EHT))
+		return -EOPNOTSUPP;
+
+	return 0;
+}
+
 static int nl80211_start_ap(struct sk_buff *skb, struct genl_info *info)
 {
 	struct cfg80211_registered_device *rdev = info->user_ptr[0];
@@ -5828,7 +5972,8 @@ static int nl80211_start_ap(struct sk_buff *skb, struct genl_info *info)
 	if (!params)
 		return -ENOMEM;
 
-	err = nl80211_parse_beacon(rdev, info->attrs, &params->beacon);
+	err = nl80211_parse_beacon(rdev, info->attrs, &params->beacon,
+				   info->extack);
 	if (err)
 		goto out;
 
@@ -6058,7 +6203,16 @@ static int nl80211_start_ap(struct sk_buff *skb, struct genl_info *info)
 			goto out_unlock;
 	}
 
+	if (!params->mbssid_config.ema && params->beacon.rnr_ies) {
+		err = -EINVAL;
+		goto out_unlock;
+	}
+
 	err = nl80211_calculate_ap_params(params);
+	if (err)
+		goto out_unlock;
+
+	err = nl80211_validate_ap_phy_operation(params);
 	if (err)
 		goto out_unlock;
 
@@ -6087,6 +6241,8 @@ static int nl80211_start_ap(struct sk_buff *skb, struct genl_info *info)
 
 		if (info->attrs[NL80211_ATTR_SOCKET_OWNER])
 			wdev->conn_owner_nlportid = info->snd_portid;
+
+		nl80211_send_ap_started(wdev, link_id);
 	}
 out_unlock:
 	wdev_unlock(wdev);
@@ -6097,6 +6253,7 @@ out:
 	    params->mbssid_config.tx_wdev->netdev &&
 	    params->mbssid_config.tx_wdev->netdev != dev)
 		dev_put(params->mbssid_config.tx_wdev->netdev);
+	kfree(params->beacon.rnr_ies);
 	kfree(params);
 
 	return err;
@@ -6121,7 +6278,7 @@ static int nl80211_set_beacon(struct sk_buff *skb, struct genl_info *info)
 	if (!wdev->links[link_id].ap.beacon_interval)
 		return -EINVAL;
 
-	err = nl80211_parse_beacon(rdev, info->attrs, &params);
+	err = nl80211_parse_beacon(rdev, info->attrs, &params, info->extack);
 	if (err)
 		goto out;
 
@@ -6131,6 +6288,7 @@ static int nl80211_set_beacon(struct sk_buff *skb, struct genl_info *info)
 
 out:
 	kfree(params.mbssid_ies);
+	kfree(params.rnr_ies);
 	return err;
 }
 
@@ -6252,11 +6410,26 @@ bool nl80211_put_sta_rate(struct sk_buff *msg, struct rate_info *info, int attr)
 		return false;
 
 	switch (info->bw) {
+	case RATE_INFO_BW_1:
+		rate_flg = NL80211_RATE_INFO_1_MHZ_WIDTH;
+		break;
+	case RATE_INFO_BW_2:
+		rate_flg = NL80211_RATE_INFO_2_MHZ_WIDTH;
+		break;
+	case RATE_INFO_BW_4:
+		rate_flg = NL80211_RATE_INFO_4_MHZ_WIDTH;
+		break;
 	case RATE_INFO_BW_5:
 		rate_flg = NL80211_RATE_INFO_5_MHZ_WIDTH;
 		break;
+	case RATE_INFO_BW_8:
+		rate_flg = NL80211_RATE_INFO_8_MHZ_WIDTH;
+		break;
 	case RATE_INFO_BW_10:
 		rate_flg = NL80211_RATE_INFO_10_MHZ_WIDTH;
+		break;
+	case RATE_INFO_BW_16:
+		rate_flg = NL80211_RATE_INFO_16_MHZ_WIDTH;
 		break;
 	default:
 		WARN_ON(1);
@@ -6315,6 +6488,14 @@ bool nl80211_put_sta_rate(struct sk_buff *msg, struct rate_info *info, int attr)
 		if (info->bw == RATE_INFO_BW_HE_RU &&
 		    nla_put_u8(msg, NL80211_RATE_INFO_HE_RU_ALLOC,
 			       info->he_ru_alloc))
+			return false;
+	} else if (info->flags & RATE_INFO_FLAGS_S1G_MCS) {
+		if (nla_put_u8(msg, NL80211_RATE_INFO_S1G_MCS, info->mcs))
+			return false;
+		if (nla_put_u8(msg, NL80211_RATE_INFO_S1G_NSS, info->nss))
+			return false;
+		if (info->flags & RATE_INFO_FLAGS_SHORT_GI &&
+		    nla_put_flag(msg, NL80211_RATE_INFO_SHORT_GI))
 			return false;
 	} else if (info->flags & RATE_INFO_FLAGS_EHT_MCS) {
 		if (nla_put_u8(msg, NL80211_RATE_INFO_EHT_MCS, info->mcs))
@@ -8416,6 +8597,11 @@ static int nl80211_put_regdom(const struct ieee80211_regdomain *regdom,
 				reg_rule->dfs_cac_ms))
 			goto nla_put_failure;
 
+		if ((reg_rule->flags & NL80211_RRF_PSD) &&
+		    nla_put_s8(msg, NL80211_ATTR_POWER_RULE_PSD,
+			       reg_rule->psd))
+			goto nla_put_failure;
+
 		nla_nest_end(msg, nl_reg_rule);
 	}
 
@@ -8987,7 +9173,7 @@ static int nl80211_trigger_scan(struct sk_buff *skb, struct genl_info *info)
 	struct nlattr *attr;
 	struct wiphy *wiphy;
 	int err, tmp, n_ssids = 0, n_channels, i;
-	size_t ie_len;
+	size_t ie_len, size;
 
 	wiphy = &rdev->wiphy;
 
@@ -9032,10 +9218,10 @@ static int nl80211_trigger_scan(struct sk_buff *skb, struct genl_info *info)
 	if (ie_len > wiphy->max_scan_ie_len)
 		return -EINVAL;
 
-	request = kzalloc(sizeof(*request)
-			+ sizeof(*request->ssids) * n_ssids
-			+ sizeof(*request->channels) * n_channels
-			+ ie_len, GFP_KERNEL);
+	size = struct_size(request, channels, n_channels);
+	size = size_add(size, array_size(sizeof(*request->ssids), n_ssids));
+	size = size_add(size, ie_len);
+	request = kzalloc(size, GFP_KERNEL);
 	if (!request)
 		return -ENOMEM;
 
@@ -9368,7 +9554,7 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 	struct nlattr *attr;
 	int err, tmp, n_ssids = 0, n_match_sets = 0, n_channels, i, n_plans = 0;
 	enum nl80211_band band;
-	size_t ie_len;
+	size_t ie_len, size;
 	struct nlattr *tb[NL80211_SCHED_SCAN_MATCH_ATTR_MAX + 1];
 	s32 default_match_rssi = NL80211_SCAN_RSSI_THOLD_OFF;
 
@@ -9477,12 +9663,14 @@ nl80211_parse_sched_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
 	     attrs[NL80211_ATTR_SCHED_SCAN_RSSI_ADJUST]))
 		return ERR_PTR(-EINVAL);
 
-	request = kzalloc(sizeof(*request)
-			+ sizeof(*request->ssids) * n_ssids
-			+ sizeof(*request->match_sets) * n_match_sets
-			+ sizeof(*request->scan_plans) * n_plans
-			+ sizeof(*request->channels) * n_channels
-			+ ie_len, GFP_KERNEL);
+	size = struct_size(request, channels, n_channels);
+	size = size_add(size, array_size(sizeof(*request->ssids), n_ssids));
+	size = size_add(size, array_size(sizeof(*request->match_sets),
+					 n_match_sets));
+	size = size_add(size, array_size(sizeof(*request->scan_plans),
+					 n_plans));
+	size = size_add(size, ie_len);
+	request = kzalloc(size, GFP_KERNEL);
 	if (!request)
 		return ERR_PTR(-ENOMEM);
 
@@ -9988,7 +10176,8 @@ static int nl80211_channel_switch(struct sk_buff *skb, struct genl_info *info)
 	if (!need_new_beacon)
 		goto skip_beacons;
 
-	err = nl80211_parse_beacon(rdev, info->attrs, &params.beacon_after);
+	err = nl80211_parse_beacon(rdev, info->attrs, &params.beacon_after,
+				   info->extack);
 	if (err)
 		goto free;
 
@@ -10005,7 +10194,8 @@ static int nl80211_channel_switch(struct sk_buff *skb, struct genl_info *info)
 	if (err)
 		goto free;
 
-	err = nl80211_parse_beacon(rdev, csa_attrs, &params.beacon_csa);
+	err = nl80211_parse_beacon(rdev, csa_attrs, &params.beacon_csa,
+				   info->extack);
 	if (err)
 		goto free;
 
@@ -10125,6 +10315,8 @@ skip_beacons:
 free:
 	kfree(params.beacon_after.mbssid_ies);
 	kfree(params.beacon_csa.mbssid_ies);
+	kfree(params.beacon_after.rnr_ies);
+	kfree(params.beacon_csa.rnr_ies);
 	kfree(csa_attrs);
 	return err;
 }
@@ -10204,7 +10396,6 @@ static int nl80211_send_bss(struct sk_buff *msg, struct netlink_callback *cb,
 	    nla_put_u32(msg, NL80211_BSS_FREQUENCY, res->channel->center_freq) ||
 	    nla_put_u32(msg, NL80211_BSS_FREQUENCY_OFFSET,
 			res->channel->freq_offset) ||
-	    nla_put_u32(msg, NL80211_BSS_CHAN_WIDTH, res->scan_width) ||
 	    nla_put_u32(msg, NL80211_BSS_SEEN_MS_AGO,
 			jiffies_to_msecs(jiffies - intbss->ts)))
 		goto nla_put_failure;
@@ -10264,6 +10455,15 @@ static int nl80211_send_bss(struct sk_buff *msg, struct netlink_callback *cb,
 		break;
 	}
 
+	if (nla_put_u32(msg, NL80211_BSS_USE_FOR, res->use_for))
+		goto nla_put_failure;
+
+	if (res->cannot_use_reasons &&
+	    nla_put_u64_64bit(msg, NL80211_BSS_CANNOT_USE_REASONS,
+			      res->cannot_use_reasons,
+			      NL80211_BSS_PAD))
+		goto nla_put_failure;
+
 	nla_nest_end(msg, bss);
 
 	genlmsg_end(msg, hdr);
@@ -10281,14 +10481,26 @@ static int nl80211_dump_scan(struct sk_buff *skb, struct netlink_callback *cb)
 	struct cfg80211_registered_device *rdev;
 	struct cfg80211_internal_bss *scan;
 	struct wireless_dev *wdev;
+	struct nlattr **attrbuf;
 	int start = cb->args[2], idx = 0;
+	bool dump_include_use_data;
 	int err;
 
-	err = nl80211_prepare_wdev_dump(cb, &rdev, &wdev, NULL);
-	if (err)
+	attrbuf = kcalloc(NUM_NL80211_ATTR, sizeof(*attrbuf), GFP_KERNEL);
+	if (!attrbuf)
+		return -ENOMEM;
+
+	err = nl80211_prepare_wdev_dump(cb, &rdev, &wdev, attrbuf);
+	if (err) {
+		kfree(attrbuf);
 		return err;
+	}
 	/* nl80211_prepare_wdev_dump acquired it in the successful case */
 	__acquire(&rdev->wiphy.mtx);
+
+	dump_include_use_data =
+		attrbuf[NL80211_ATTR_BSS_DUMP_INCLUDE_USE_DATA];
+	kfree(attrbuf);
 
 	wdev_lock(wdev);
 	spin_lock_bh(&rdev->bss_lock);
@@ -10306,6 +10518,9 @@ static int nl80211_dump_scan(struct sk_buff *skb, struct netlink_callback *cb)
 
 	list_for_each_entry(scan, &rdev->bss_list, list) {
 		if (++idx <= start)
+			continue;
+		if (!dump_include_use_data &&
+		    !(scan->pub.use_for & NL80211_BSS_USE_FOR_NORMAL))
 			continue;
 		if (nl80211_send_bss(skb, cb,
 				cb->nlh->nlmsg_seq, NLM_F_MULTI,
@@ -10763,12 +10978,13 @@ static int nl80211_crypto_settings(struct cfg80211_registered_device *rdev,
 
 static struct cfg80211_bss *nl80211_assoc_bss(struct cfg80211_registered_device *rdev,
 					      const u8 *ssid, int ssid_len,
-					      struct nlattr **attrs)
+					      struct nlattr **attrs,
+					      int assoc_link_id, int link_id)
 {
 	struct ieee80211_channel *chan;
 	struct cfg80211_bss *bss;
 	const u8 *bssid;
-	u32 freq;
+	u32 freq, use_for = 0;
 
 	if (!attrs[NL80211_ATTR_MAC] || !attrs[NL80211_ATTR_WIPHY_FREQ])
 		return ERR_PTR(-EINVAL);
@@ -10783,10 +10999,16 @@ static struct cfg80211_bss *nl80211_assoc_bss(struct cfg80211_registered_device 
 	if (!chan)
 		return ERR_PTR(-EINVAL);
 
-	bss = cfg80211_get_bss(&rdev->wiphy, chan, bssid,
-			       ssid, ssid_len,
-			       IEEE80211_BSS_TYPE_ESS,
-			       IEEE80211_PRIVACY_ANY);
+	if (assoc_link_id >= 0)
+		use_for = NL80211_BSS_USE_FOR_MLD_LINK;
+	if (assoc_link_id == link_id)
+		use_for |= NL80211_BSS_USE_FOR_NORMAL;
+
+	bss = __cfg80211_get_bss(&rdev->wiphy, chan, bssid,
+				 ssid, ssid_len,
+				 IEEE80211_BSS_TYPE_ESS,
+				 IEEE80211_PRIVACY_ANY,
+				 use_for);
 	if (!bss)
 		return ERR_PTR(-ENOENT);
 
@@ -10962,7 +11184,8 @@ static int nl80211_associate(struct sk_buff *skb, struct genl_info *info)
 				goto free;
 			}
 			req.links[link_id].bss =
-				nl80211_assoc_bss(rdev, ssid, ssid_len, attrs);
+				nl80211_assoc_bss(rdev, ssid, ssid_len, attrs,
+						  req.link_id, link_id);
 			if (IS_ERR(req.links[link_id].bss)) {
 				err = PTR_ERR(req.links[link_id].bss);
 				req.links[link_id].bss = NULL;
@@ -10993,6 +11216,9 @@ static int nl80211_associate(struct sk_buff *skb, struct genl_info *info)
 					goto free;
 				}
 			}
+
+			req.links[link_id].disabled =
+				nla_get_flag(attrs[NL80211_ATTR_MLO_LINK_DISABLED]);
 		}
 
 		if (!req.links[req.link_id].bss) {
@@ -11007,13 +11233,21 @@ static int nl80211_associate(struct sk_buff *skb, struct genl_info *info)
 			goto free;
 		}
 
+		if (req.links[req.link_id].disabled) {
+			GENL_SET_ERR_MSG(info,
+					 "cannot have assoc link disabled");
+			err = -EINVAL;
+			goto free;
+		}
+
 		kfree(attrs);
 		attrs = NULL;
 	} else {
 		if (req.link_id >= 0)
 			return -EINVAL;
 
-		req.bss = nl80211_assoc_bss(rdev, ssid, ssid_len, info->attrs);
+		req.bss = nl80211_assoc_bss(rdev, ssid, ssid_len, info->attrs,
+					    -1, -1);
 		if (IS_ERR(req.bss))
 			return PTR_ERR(req.bss);
 		ap_addr = req.bss->bssid;
@@ -12106,6 +12340,7 @@ static int nl80211_tdls_mgmt(struct sk_buff *skb, struct genl_info *info)
 	u32 peer_capability = 0;
 	u16 status_code;
 	u8 *peer;
+	int link_id;
 	bool initiator;
 
 	if (!(rdev->wiphy.flags & WIPHY_FLAG_SUPPORTS_TDLS) ||
@@ -12127,8 +12362,9 @@ static int nl80211_tdls_mgmt(struct sk_buff *skb, struct genl_info *info)
 	if (info->attrs[NL80211_ATTR_TDLS_PEER_CAPABILITY])
 		peer_capability =
 			nla_get_u32(info->attrs[NL80211_ATTR_TDLS_PEER_CAPABILITY]);
+	link_id = nl80211_link_id_or_invalid(info->attrs);
 
-	return rdev_tdls_mgmt(rdev, dev, peer, action_code,
+	return rdev_tdls_mgmt(rdev, dev, peer, link_id, action_code,
 			      dialog_token, status_code, peer_capability,
 			      initiator,
 			      nla_data(info->attrs[NL80211_ATTR_IE]),
@@ -12635,7 +12871,8 @@ static int nl80211_set_cqm_txe(struct genl_info *info,
 }
 
 static int cfg80211_cqm_rssi_update(struct cfg80211_registered_device *rdev,
-				    struct net_device *dev)
+				    struct net_device *dev,
+				    struct cfg80211_cqm_config *cqm_config)
 {
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
 	s32 last, low, high;
@@ -12643,17 +12880,13 @@ static int cfg80211_cqm_rssi_update(struct cfg80211_registered_device *rdev,
 	int i, n, low_index;
 	int err;
 
-	/* RSSI reporting disabled? */
-	if (!wdev->cqm_config)
-		return rdev_set_cqm_rssi_range_config(rdev, dev, 0, 0);
-
 	/*
 	 * Obtain current RSSI value if possible, if not and no RSSI threshold
 	 * event has been received yet, we should receive an event after a
 	 * connection is established and enough beacons received to calculate
 	 * the average.
 	 */
-	if (!wdev->cqm_config->last_rssi_event_value &&
+	if (!cqm_config->last_rssi_event_value &&
 	    wdev->links[0].client.current_bss &&
 	    rdev->ops->get_station) {
 		struct station_info sinfo = {};
@@ -12667,30 +12900,30 @@ static int cfg80211_cqm_rssi_update(struct cfg80211_registered_device *rdev,
 
 		cfg80211_sinfo_release_content(&sinfo);
 		if (sinfo.filled & BIT_ULL(NL80211_STA_INFO_BEACON_SIGNAL_AVG))
-			wdev->cqm_config->last_rssi_event_value =
+			cqm_config->last_rssi_event_value =
 				(s8) sinfo.rx_beacon_signal_avg;
 	}
 
-	last = wdev->cqm_config->last_rssi_event_value;
-	hyst = wdev->cqm_config->rssi_hyst;
-	n = wdev->cqm_config->n_rssi_thresholds;
+	last = cqm_config->last_rssi_event_value;
+	hyst = cqm_config->rssi_hyst;
+	n = cqm_config->n_rssi_thresholds;
 
 	for (i = 0; i < n; i++) {
 		i = array_index_nospec(i, n);
-		if (last < wdev->cqm_config->rssi_thresholds[i])
+		if (last < cqm_config->rssi_thresholds[i])
 			break;
 	}
 
 	low_index = i - 1;
 	if (low_index >= 0) {
 		low_index = array_index_nospec(low_index, n);
-		low = wdev->cqm_config->rssi_thresholds[low_index] - hyst;
+		low = cqm_config->rssi_thresholds[low_index] - hyst;
 	} else {
 		low = S32_MIN;
 	}
 	if (i < n) {
 		i = array_index_nospec(i, n);
-		high = wdev->cqm_config->rssi_thresholds[i] + hyst - 1;
+		high = cqm_config->rssi_thresholds[i] + hyst - 1;
 	} else {
 		high = S32_MAX;
 	}
@@ -12703,6 +12936,7 @@ static int nl80211_set_cqm_rssi(struct genl_info *info,
 				u32 hysteresis)
 {
 	struct cfg80211_registered_device *rdev = info->user_ptr[0];
+	struct cfg80211_cqm_config *cqm_config = NULL, *old;
 	struct net_device *dev = info->user_ptr[1];
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
 	int i, err;
@@ -12720,29 +12954,34 @@ static int nl80211_set_cqm_rssi(struct genl_info *info,
 	    wdev->iftype != NL80211_IFTYPE_P2P_CLIENT)
 		return -EOPNOTSUPP;
 
-	wdev_lock(wdev);
-	cfg80211_cqm_config_free(wdev);
-	wdev_unlock(wdev);
-
-	if (n_thresholds <= 1 && rdev->ops->set_cqm_rssi_config) {
-		if (n_thresholds == 0 || thresholds[0] == 0) /* Disabling */
-			return rdev_set_cqm_rssi_config(rdev, dev, 0, 0);
-
-		return rdev_set_cqm_rssi_config(rdev, dev,
-						thresholds[0], hysteresis);
-	}
-
-	if (!wiphy_ext_feature_isset(&rdev->wiphy,
-				     NL80211_EXT_FEATURE_CQM_RSSI_LIST))
-		return -EOPNOTSUPP;
-
 	if (n_thresholds == 1 && thresholds[0] == 0) /* Disabling */
 		n_thresholds = 0;
 
 	wdev_lock(wdev);
-	if (n_thresholds) {
-		struct cfg80211_cqm_config *cqm_config;
+	old = rcu_dereference_protected(wdev->cqm_config,
+					lockdep_is_held(&wdev->mtx));
 
+	/* if already disabled just succeed */
+	if (!n_thresholds && !old) {
+		err = 0;
+		goto unlock;
+	}
+
+	if (n_thresholds > 1) {
+		if (!wiphy_ext_feature_isset(&rdev->wiphy,
+					     NL80211_EXT_FEATURE_CQM_RSSI_LIST) ||
+		    !rdev->ops->set_cqm_rssi_range_config) {
+			err = -EOPNOTSUPP;
+			goto unlock;
+		}
+	} else {
+		if (!rdev->ops->set_cqm_rssi_config) {
+			err = -EOPNOTSUPP;
+			goto unlock;
+		}
+	}
+
+	if (n_thresholds) {
 		cqm_config = kzalloc(struct_size(cqm_config, rssi_thresholds,
 						 n_thresholds),
 				     GFP_KERNEL);
@@ -12756,12 +12995,32 @@ static int nl80211_set_cqm_rssi(struct genl_info *info,
 		memcpy(cqm_config->rssi_thresholds, thresholds,
 		       flex_array_size(cqm_config, rssi_thresholds,
 				       n_thresholds));
+		cqm_config->use_range_api = n_thresholds > 1 ||
+					    !rdev->ops->set_cqm_rssi_config;
 
-		wdev->cqm_config = cqm_config;
+		rcu_assign_pointer(wdev->cqm_config, cqm_config);
+
+		if (cqm_config->use_range_api)
+			err = cfg80211_cqm_rssi_update(rdev, dev, cqm_config);
+		else
+			err = rdev_set_cqm_rssi_config(rdev, dev,
+						       thresholds[0],
+						       hysteresis);
+	} else {
+		RCU_INIT_POINTER(wdev->cqm_config, NULL);
+		/* if enabled as range also disable via range */
+		if (old->use_range_api)
+			err = rdev_set_cqm_rssi_range_config(rdev, dev, 0, 0);
+		else
+			err = rdev_set_cqm_rssi_config(rdev, dev, 0, 0);
 	}
 
-	err = cfg80211_cqm_rssi_update(rdev, dev);
-
+	if (err) {
+		rcu_assign_pointer(wdev->cqm_config, old);
+		kfree_rcu(cqm_config, rcu_head);
+	} else {
+		kfree_rcu(old, rcu_head);
+	}
 unlock:
 	wdev_unlock(wdev);
 
@@ -14034,7 +14293,7 @@ static int nl80211_start_p2p_device(struct sk_buff *skb, struct genl_info *info)
 	if (wdev_running(wdev))
 		return 0;
 
-	if (rfkill_blocked(rdev->rfkill))
+	if (rfkill_blocked(rdev->wiphy.rfkill))
 		return -ERFKILL;
 
 	err = rdev_start_p2p_device(rdev, wdev);
@@ -14076,7 +14335,7 @@ static int nl80211_start_nan(struct sk_buff *skb, struct genl_info *info)
 	if (wdev_running(wdev))
 		return -EEXIST;
 
-	if (rfkill_blocked(rdev->rfkill))
+	if (rfkill_blocked(rdev->wiphy.rfkill))
 		return -ERFKILL;
 
 	if (!info->attrs[NL80211_ATTR_NAN_MASTER_PREF])
@@ -15842,7 +16101,8 @@ static int nl80211_color_change(struct sk_buff *skb, struct genl_info *info)
 	params.count = nla_get_u8(info->attrs[NL80211_ATTR_COLOR_CHANGE_COUNT]);
 	params.color = nla_get_u8(info->attrs[NL80211_ATTR_COLOR_CHANGE_COLOR]);
 
-	err = nl80211_parse_beacon(rdev, info->attrs, &params.beacon_next);
+	err = nl80211_parse_beacon(rdev, info->attrs, &params.beacon_next,
+				   info->extack);
 	if (err)
 		return err;
 
@@ -15856,7 +16116,8 @@ static int nl80211_color_change(struct sk_buff *skb, struct genl_info *info)
 	if (err)
 		goto out;
 
-	err = nl80211_parse_beacon(rdev, tb, &params.beacon_color_change);
+	err = nl80211_parse_beacon(rdev, tb, &params.beacon_color_change,
+				   info->extack);
 	if (err)
 		goto out;
 
@@ -15912,6 +16173,8 @@ static int nl80211_color_change(struct sk_buff *skb, struct genl_info *info)
 out:
 	kfree(params.beacon_next.mbssid_ies);
 	kfree(params.beacon_color_change.mbssid_ies);
+	kfree(params.beacon_next.rnr_ies);
+	kfree(params.beacon_color_change.rnr_ies);
 	kfree(tb);
 	return err;
 }
@@ -16130,6 +16393,58 @@ nl80211_remove_link_station(struct sk_buff *skb, struct genl_info *info)
 	wdev_unlock(dev->ieee80211_ptr);
 
 	return ret;
+}
+
+static int nl80211_set_hw_timestamp(struct sk_buff *skb,
+				    struct genl_info *info)
+{
+	struct cfg80211_registered_device *rdev = info->user_ptr[0];
+	struct net_device *dev = info->user_ptr[1];
+	struct cfg80211_set_hw_timestamp hwts = {};
+
+	if (!rdev->wiphy.hw_timestamp_max_peers)
+		return -EOPNOTSUPP;
+
+	if (!info->attrs[NL80211_ATTR_MAC] &&
+	    rdev->wiphy.hw_timestamp_max_peers != CFG80211_HW_TIMESTAMP_ALL_PEERS)
+		return -EOPNOTSUPP;
+
+	if (info->attrs[NL80211_ATTR_MAC])
+		hwts.macaddr = nla_data(info->attrs[NL80211_ATTR_MAC]);
+
+	hwts.enable =
+		nla_get_flag(info->attrs[NL80211_ATTR_HW_TIMESTAMP_ENABLED]);
+
+	return rdev_set_hw_timestamp(rdev, dev, &hwts);
+}
+
+static int
+nl80211_set_ttlm(struct sk_buff *skb, struct genl_info *info)
+{
+	struct cfg80211_ttlm_params params = {};
+	struct cfg80211_registered_device *rdev = info->user_ptr[0];
+	struct net_device *dev = info->user_ptr[1];
+	struct wireless_dev *wdev = dev->ieee80211_ptr;
+
+	if (wdev->iftype != NL80211_IFTYPE_STATION &&
+	    wdev->iftype != NL80211_IFTYPE_P2P_CLIENT)
+		return -EOPNOTSUPP;
+
+	if (!wdev->connected)
+		return -ENOLINK;
+
+	if (!info->attrs[NL80211_ATTR_MLO_TTLM_DLINK] ||
+	    !info->attrs[NL80211_ATTR_MLO_TTLM_ULINK])
+		return -EINVAL;
+
+	nla_memcpy(params.dlink,
+		   info->attrs[NL80211_ATTR_MLO_TTLM_DLINK],
+		   sizeof(params.dlink));
+	nla_memcpy(params.ulink,
+		   info->attrs[NL80211_ATTR_MLO_TTLM_ULINK],
+		   sizeof(params.ulink));
+
+	return rdev_set_ttlm(rdev, dev, &params);
 }
 
 #define NL80211_FLAG_NEED_WIPHY		0x01
@@ -16968,7 +17283,8 @@ static const struct genl_small_ops nl80211_small_ops[] = {
 		.validate = GENL_DONT_VALIDATE_STRICT | GENL_DONT_VALIDATE_DUMP,
 		.doit = nl80211_tdls_mgmt,
 		.flags = GENL_UNS_ADMIN_PERM,
-		.internal_flags = IFLAGS(NL80211_FLAG_NEED_NETDEV_UP),
+		.internal_flags = IFLAGS(NL80211_FLAG_NEED_NETDEV_UP |
+					 NL80211_FLAG_MLO_VALID_LINK_ID),
 	},
 	{
 		.cmd = NL80211_CMD_TDLS_OPER,
@@ -17303,6 +17619,18 @@ static const struct genl_small_ops nl80211_small_ops[] = {
 		.flags = GENL_UNS_ADMIN_PERM,
 		.internal_flags = IFLAGS(NL80211_FLAG_NEED_NETDEV_UP |
 					 NL80211_FLAG_MLO_VALID_LINK_ID),
+	},
+	{
+		.cmd = NL80211_CMD_SET_HW_TIMESTAMP,
+		.doit = nl80211_set_hw_timestamp,
+		.flags = GENL_UNS_ADMIN_PERM,
+		.internal_flags = IFLAGS(NL80211_FLAG_NEED_NETDEV_UP),
+	},
+	{
+		.cmd = NL80211_CMD_SET_TID_TO_LINK_MAPPING,
+		.doit = nl80211_set_ttlm,
+		.flags = GENL_UNS_ADMIN_PERM,
+		.internal_flags = IFLAGS(NL80211_FLAG_NEED_NETDEV_UP),
 	},
 };
 
@@ -18095,6 +18423,76 @@ void nl80211_send_disconnected(struct cfg80211_registered_device *rdev,
 	nlmsg_free(msg);
 }
 
+void cfg80211_links_removed(struct net_device *dev, u16 link_mask)
+{
+	struct wireless_dev *wdev = dev->ieee80211_ptr;
+	struct wiphy *wiphy = wdev->wiphy;
+	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wiphy);
+	struct sk_buff *msg;
+	struct nlattr *links;
+	void *hdr;
+
+	ASSERT_WDEV_LOCK(wdev);
+	trace_cfg80211_links_removed(dev, link_mask);
+
+	if (WARN_ON(wdev->iftype != NL80211_IFTYPE_STATION &&
+		    wdev->iftype != NL80211_IFTYPE_P2P_CLIENT))
+		return;
+
+	if (WARN_ON(!wdev->valid_links || !link_mask ||
+		    (wdev->valid_links & link_mask) != link_mask ||
+		    wdev->valid_links == link_mask))
+		return;
+
+	cfg80211_wdev_release_link_bsses(wdev, link_mask);
+	wdev->valid_links &= ~link_mask;
+
+	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
+	if (!msg)
+		return;
+
+	hdr = nl80211hdr_put(msg, 0, 0, 0, NL80211_CMD_LINKS_REMOVED);
+	if (!hdr) {
+		nlmsg_free(msg);
+		return;
+	}
+
+	if (nla_put_u32(msg, NL80211_ATTR_WIPHY, rdev->wiphy_idx) ||
+	    nla_put_u32(msg, NL80211_ATTR_IFINDEX, dev->ifindex))
+		goto nla_put_failure;
+
+	links = nla_nest_start(msg, NL80211_ATTR_MLO_LINKS);
+	if (!links)
+		goto nla_put_failure;
+
+	while (link_mask) {
+		struct nlattr *link;
+		int link_id = __ffs(link_mask);
+
+		link = nla_nest_start(msg, link_id + 1);
+		if (!link)
+			goto nla_put_failure;
+
+		if (nla_put_u8(msg, NL80211_ATTR_MLO_LINK_ID, link_id))
+			goto nla_put_failure;
+
+		nla_nest_end(msg, link);
+		link_mask &= ~(1 << link_id);
+	}
+
+	nla_nest_end(msg, links);
+
+	genlmsg_end(msg, hdr);
+
+	genlmsg_multicast_netns(&nl80211_fam, wiphy_net(&rdev->wiphy), msg, 0,
+				NL80211_MCGRP_MLME, GFP_KERNEL);
+	return;
+
+ nla_put_failure:
+	nlmsg_free(msg);
+}
+EXPORT_SYMBOL(cfg80211_links_removed);
+
 void nl80211_send_ibss_bssid(struct cfg80211_registered_device *rdev,
 			     struct net_device *netdev, const u8 *bssid,
 			     gfp_t gfp)
@@ -18807,9 +19205,8 @@ void cfg80211_cqm_rssi_notify(struct net_device *dev,
 			      enum nl80211_cqm_rssi_threshold_event rssi_event,
 			      s32 rssi_level, gfp_t gfp)
 {
-	struct sk_buff *msg;
 	struct wireless_dev *wdev = dev->ieee80211_ptr;
-	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wdev->wiphy);
+	struct cfg80211_cqm_config *cqm_config;
 
 	trace_cfg80211_cqm_rssi_notify(dev, rssi_event, rssi_level);
 
@@ -18817,18 +19214,42 @@ void cfg80211_cqm_rssi_notify(struct net_device *dev,
 		    rssi_event != NL80211_CQM_RSSI_THRESHOLD_EVENT_HIGH))
 		return;
 
-	if (wdev->cqm_config) {
-		wdev->cqm_config->last_rssi_event_value = rssi_level;
-
-		cfg80211_cqm_rssi_update(rdev, dev);
-
-		if (rssi_level == 0)
-			rssi_level = wdev->cqm_config->last_rssi_event_value;
+	rcu_read_lock();
+	cqm_config = rcu_dereference(wdev->cqm_config);
+	if (cqm_config) {
+		cqm_config->last_rssi_event_value = rssi_level;
+		cqm_config->last_rssi_event_type = rssi_event;
+		wiphy_work_queue(wdev->wiphy, &wdev->cqm_rssi_work);
 	}
+	rcu_read_unlock();
+}
+EXPORT_SYMBOL(cfg80211_cqm_rssi_notify);
 
-	msg = cfg80211_prepare_cqm(dev, NULL, gfp);
+void cfg80211_cqm_rssi_notify_work(struct wiphy *wiphy, struct wiphy_work *work)
+{
+	struct wireless_dev *wdev = container_of(work, struct wireless_dev,
+						 cqm_rssi_work);
+	struct cfg80211_registered_device *rdev = wiphy_to_rdev(wiphy);
+	enum nl80211_cqm_rssi_threshold_event rssi_event;
+	struct cfg80211_cqm_config *cqm_config;
+	struct sk_buff *msg;
+	s32 rssi_level;
+
+	wdev_lock(wdev);
+	cqm_config = rcu_dereference_protected(wdev->cqm_config,
+					       lockdep_is_held(&wdev->mtx));
+	if (!cqm_config)
+		goto unlock;
+
+	if (cqm_config->use_range_api)
+		cfg80211_cqm_rssi_update(rdev, wdev->netdev, cqm_config);
+
+	rssi_level = cqm_config->last_rssi_event_value;
+	rssi_event = cqm_config->last_rssi_event_type;
+
+	msg = cfg80211_prepare_cqm(wdev->netdev, NULL, GFP_KERNEL);
 	if (!msg)
-		return;
+		goto unlock;
 
 	if (nla_put_u32(msg, NL80211_ATTR_CQM_RSSI_THRESHOLD_EVENT,
 			rssi_event))
@@ -18838,14 +19259,15 @@ void cfg80211_cqm_rssi_notify(struct net_device *dev,
 				      rssi_level))
 		goto nla_put_failure;
 
-	cfg80211_send_cqm(msg, gfp);
+	cfg80211_send_cqm(msg, GFP_KERNEL);
 
-	return;
+	goto unlock;
 
  nla_put_failure:
 	nlmsg_free(msg);
+ unlock:
+	wdev_unlock(wdev);
 }
-EXPORT_SYMBOL(cfg80211_cqm_rssi_notify);
 
 void cfg80211_cqm_txe_notify(struct net_device *dev,
 			     const u8 *peer, u32 num_packets,
@@ -19146,7 +19568,7 @@ void cfg80211_ch_switch_started_notify(struct net_device *dev,
 }
 EXPORT_SYMBOL(cfg80211_ch_switch_started_notify);
 
-int cfg80211_bss_color_notify(struct net_device *dev, gfp_t gfp,
+int cfg80211_bss_color_notify(struct net_device *dev,
 			      enum nl80211_commands cmd, u8 count,
 			      u64 color_bitmap)
 {
@@ -19160,7 +19582,7 @@ int cfg80211_bss_color_notify(struct net_device *dev, gfp_t gfp,
 
 	trace_cfg80211_bss_color_notify(dev, cmd, count, color_bitmap);
 
-	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, gfp);
+	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
 	if (!msg)
 		return -ENOMEM;
 
@@ -19183,7 +19605,7 @@ int cfg80211_bss_color_notify(struct net_device *dev, gfp_t gfp,
 	genlmsg_end(msg, hdr);
 
 	return genlmsg_multicast_netns(&nl80211_fam, wiphy_net(&rdev->wiphy),
-				       msg, 0, NL80211_MCGRP_MLME, gfp);
+				       msg, 0, NL80211_MCGRP_MLME, GFP_KERNEL);
 
 nla_put_failure:
 	nlmsg_free(msg);
@@ -19621,7 +20043,8 @@ static int nl80211_netlink_notify(struct notifier_block * nb,
 					list) {
 			if (sched_scan_req->owner_nlportid == notify->portid) {
 				sched_scan_req->nl_owner_dead = true;
-				schedule_work(&rdev->sched_scan_stop_wk);
+				wiphy_work_queue(&rdev->wiphy,
+						 &rdev->sched_scan_stop_wk);
 			}
 		}
 
