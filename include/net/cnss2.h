@@ -14,6 +14,7 @@
 #define CNSS_WLFW_MAX_BUILD_ID_LEN      128
 #define CNSS_MAX_DEV_MEM_NUM		4
 #define CNSS_CHIP_VER_ANY		0
+#define CNSS_QMI_ASYNC_EVENT_SUPPORT	1
 
 /*
  * Temporary change for compilation, will be removed
