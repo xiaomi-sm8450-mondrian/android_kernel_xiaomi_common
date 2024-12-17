@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/delay.h>
@@ -549,8 +549,6 @@ static int cnss_fw_mem_ready_hdlr(struct cnss_plat_data *plat_priv)
 		cnss_wlfw_bdf_dnld_send_sync(plat_priv, CNSS_BDF_HDS);
 
 	cnss_wlfw_bdf_dnld_send_sync(plat_priv, CNSS_BDF_REGDB);
-
-	cnss_wlfw_ini_file_send_sync(plat_priv, WLFW_CONN_ROAM_INI_V01);
 
 	ret = cnss_wlfw_bdf_dnld_send_sync(plat_priv,
 					   plat_priv->ctrl_params.bdf_type);
@@ -2004,6 +2002,25 @@ int cnss_qmi_send(struct device *dev, int type, void *cmd,
 	return ret;
 }
 EXPORT_SYMBOL(cnss_qmi_send);
+
+int cnss_register_driver_async_data_cb(struct device *dev, void *cb_ctx,
+				       int (*cb)(void *ctx, uint16_t type,
+						 void *event, int event_len))
+{
+	struct cnss_plat_data *plat_priv = cnss_bus_dev_to_plat_priv(dev);
+
+	if (!plat_priv)
+		return -ENODEV;
+
+	if (!test_bit(CNSS_QMI_WLFW_CONNECTED, &plat_priv->driver_state))
+		return -EINVAL;
+
+	plat_priv->get_driver_async_data_cb = cb;
+	plat_priv->get_driver_async_data_ctx = cb_ctx;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(cnss_register_driver_async_data_cb);
 
 static int cnss_cold_boot_cal_start_hdlr(struct cnss_plat_data *plat_priv)
 {

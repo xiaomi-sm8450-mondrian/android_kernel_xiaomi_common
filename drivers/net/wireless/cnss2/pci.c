@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/io.h>
@@ -2283,6 +2283,8 @@ int cnss_pci_call_driver_remove(struct cnss_pci_data *pci_priv)
 
 	plat_priv->get_info_cb_ctx = NULL;
 	plat_priv->get_info_cb = NULL;
+	plat_priv->get_driver_async_data_ctx = NULL;
+	plat_priv->get_driver_async_data_cb = NULL;
 
 	return 0;
 }

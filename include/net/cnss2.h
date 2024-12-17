@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _NET_CNSS2_H
@@ -14,6 +14,7 @@
 #define CNSS_WLFW_MAX_BUILD_ID_LEN      128
 #define CNSS_MAX_DEV_MEM_NUM		4
 #define CNSS_CHIP_VER_ANY		0
+#define CNSS_QMI_ASYNC_EVENT_SUPPORT	1
 
 /*
  * Temporary change for compilation, will be removed
@@ -325,4 +326,8 @@ extern int cnss_get_curr_therm_cdev_state(struct device *dev,
 extern int cnss_update_time_sync_period(struct device *dev,
 					 uint32_t time_sync_period);
 extern int cnss_reset_time_sync_period(struct device *dev);
+extern int cnss_register_driver_async_data_cb(struct device *dev, void *cb_ctx,
+					      int (*cb)(void *ctx,
+					      uint16_t type, void *event,
+					      int event_len));
 #endif /* _NET_CNSS2_H */
