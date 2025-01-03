@@ -65,7 +65,7 @@
     <string name="safe_mode">安全模式</string>
     <string name="reboot_to_apply">重启生效</string>
     <string name="home_module_mount">模組系統</string>
-    <string name="home_magic_mount">魔法坐騎</string>
+    <string name="home_magic_mount">Magic Mount</string>
     <string name="module_magisk_conflict">因与Magisk有冲突，所有模块不可用！</string>
     <string name="home_next_kernelsu">🔥 Next 构建</string>
     <string name="home_next_kernelsu_repo">https://github.com/rifsxd/KernelSU-Next</string>
