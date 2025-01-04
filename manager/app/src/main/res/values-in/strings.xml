@@ -19,8 +19,6 @@
     <string name="home_failure">Tandatangan KernelSU Next v2 tidak ditemukan pada kernel! [ !KSU_NEXT || != size/hash ]</string>
     <string name="home_failure_tip">Mohon agar para pengembang kernel anda mengintegrasikan KernelSU Next!</string>
     <string name="home_kernel">Kernel</string>
-    <string name="home_susfs">SuSFS: %s</string>
-    <string name="home_susfs_version">SuSFS</string>
     <string name="home_android">Versi Android</string>
     <string name="home_manager_version">Versi Manager</string>
     <string name="home_selinux_status">Status SELinux</string>
@@ -92,8 +90,6 @@
     <string name="require_kernel_version">Versi KernelSU-Next %d terlalu rendah agar manajer berfungsi normal. Harap membarui ke versi %d atau di atasnya!</string>
     <string name="settings_umount_modules_default">Melepas Modul secara bawaan</string>
     <string name="settings_umount_modules_default_summary">Menggunakan \"Umount Modul\" secara universal pada Profil Aplikasi. Jika diaktifkan, akan menghapus semua modifikasi sistem untuk aplikasi yang tidak memiliki set profil.</string>
-    <string name="settings_susfs_toggle">Sembunyikan kait su yang mencurigakan</string>
-    <string name="settings_susfs_toggle_summary">Ini menonaktifkan hook kprobe yang dibuat oleh ksu, dan sebagai gantinya hook inline non-kprobe akan diaktifkan, sama seperti implementasi yang sama untuk kernel non-gki tanpa dukungan kprobe.</string>
     <string name="profile_umount_modules_summary">Aktifkan opsi ini agar KernelSU dapat memulihkan kembali berkas termodifikasi oleh modul pada aplikasi ini.</string>
     <string name="profile_selinux_domain">Domain</string>
     <string name="profile_selinux_rules">Aturan</string>

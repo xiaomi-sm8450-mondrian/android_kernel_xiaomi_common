@@ -268,14 +268,6 @@ private fun StatusCard(
                             text = stringResource(R.string.home_module_count, getModuleCount()),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        // Spacer(Modifier.height(4.dp))
-                        // val suSFS = getSuSFS()
-                        // if (suSFS == "Supported") {
-                        //     Text(
-                        //         text = stringResource(R.string.home_susfs, getSuSFS()),
-                        //         style = MaterialTheme.typography.bodyMedium
-                        //     )
-                        // }
                     }
                 }
 
@@ -416,19 +408,6 @@ private fun InfoCard() {
                 content = stringResource(R.string.home_magic_mount),
                 icon = Icons.Filled.SettingsSuggest,
             )
-            
-            // Spacer(Modifier.height(16.dp))
-            // val isSUS_SU = getSuSFSFeatures() == "CONFIG_KSU_SUSFS_SUS_SU"
-            // val suSFS = getSuSFS()
-
-            // if (suSFS == "Supported") {
-            //     val susSUMode = if (isSUS_SU) "| SuS SU mode: ${susfsSUS_SU_Mode()}" else ""
-            //     InfoCardItem(
-            //         label = stringResource(R.string.home_susfs_version),
-            //         content = "${getSuSFSVersion()} (${getSuSFSVariant()}) $susSUMode",
-            //         icon = painterResource(R.drawable.ic_sus),
-            //     )
-            // }
         }
     }
 }
