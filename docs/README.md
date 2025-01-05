@@ -26,6 +26,10 @@ KernelSU Next officially supports most Android kernels starting from 4.4 upto 6.
 
 Currently, only `arm64-v8a` is supported.
 
+## Usage
+
+- [Installation Instruction](https://rifsxd.github.io/KernelSU-Next/)
+
 ## Security
 
 For information on reporting security vulnerabilities in KernelSU, see [SECURITY.md](/SECURITY.md).

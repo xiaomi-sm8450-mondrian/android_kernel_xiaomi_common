@@ -26,6 +26,10 @@ KernelSU Next, 4.4'dan başlayarak 6.6'ya kadar çoğu Android çekirdeğini res
 
 Şu anda sadece `arm64-v8a` desteklenmektedir.
 
+## Kullanım
+
+- [Kurulum Talimatı](https://rifsxd.github.io/KernelSU-Next/)
+
 ## Güvenlik
 
 KernelSU'daki güvenlik açıklarını bildirme hakkında bilgi için [SECURITY.md](/SECURITY.md) bölümüne bakın.

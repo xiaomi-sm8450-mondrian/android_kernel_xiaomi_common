@@ -26,6 +26,10 @@ KernelSU Next 支持从 4.4 到 6.6 的大多数安卓内核
 
 目前只支持 `arm64-v8a` 架构
 
+## 用法
+
+- [安装说明](https://rifsxd.github.io/KernelSU-Next/)
+
 ## 安全性
 
 有关报告 KernelSU Next 漏洞的信息，请参阅 [SECURITY.md](/SECURITY.md).
