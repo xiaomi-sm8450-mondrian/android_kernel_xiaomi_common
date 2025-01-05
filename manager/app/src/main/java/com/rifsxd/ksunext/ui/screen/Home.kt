@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -41,7 +42,7 @@ import com.rifsxd.ksunext.R
 import com.rifsxd.ksunext.ui.component.rememberConfirmDialog
 import com.rifsxd.ksunext.ui.util.*
 import com.rifsxd.ksunext.ui.util.module.LatestVersionInfo
-import androidx.compose.ui.graphics.vector.ImageVector
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>(start = true)
@@ -210,6 +211,18 @@ private fun TopBar(
 }
 
 @Composable
+fun getSeasonalIcon(): ImageVector {
+    val month = Calendar.getInstance().get(Calendar.MONTH) // 0-11 for January-December
+    return when (month) {
+        Calendar.DECEMBER, Calendar.JANUARY, Calendar.FEBRUARY -> Icons.Filled.AcUnit // Winter
+        Calendar.MARCH, Calendar.APRIL, Calendar.MAY -> Icons.Filled.Spa // Spring
+        Calendar.JUNE, Calendar.JULY, Calendar.AUGUST -> Icons.Filled.WbSunny // Summer
+        Calendar.SEPTEMBER, Calendar.OCTOBER, Calendar.NOVEMBER -> Icons.Filled.Forest // Fall
+        else -> Icons.Filled.Whatshot // Fallback icon
+    }
+}
+
+@Composable
 private fun StatusCard(
     kernelVersion: KernelVersion,
     ksuVersion: Int?,
@@ -246,7 +259,10 @@ private fun StatusCard(
                     val workingText =
                         "${stringResource(id = R.string.home_working)}$workingMode$safeMode"
 
-                    Icon(Icons.Filled.AcUnit, stringResource(R.string.home_working))
+                    Icon(
+                        getSeasonalIcon(), // Use dynamic seasonal icon
+                        contentDescription = stringResource(R.string.home_working)
+                    )
                     Column(Modifier.padding(start = 20.dp)) {
                         Text(
                             text = workingText,
