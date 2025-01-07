@@ -182,6 +182,7 @@ static inline void brutal_tcp_snd_cwnd_set(struct tcp_sock *tp, u32 val)
 
 static void brutal_update_rate(struct sock *sk)
 {
+    int i;
     struct tcp_sock *tp = tcp_sk(sk);
     struct brutal *brutal = inet_csk_ca(sk);
 
@@ -197,7 +198,7 @@ static void brutal_update_rate(struct sock *sk)
     if (!rtt_ms)
         rtt_ms = 1;
 
-    for (int i = 0; i < PKT_INFO_SLOTS; i++)
+    for (i = 0; i < PKT_INFO_SLOTS; i++)
     {
         if (brutal->slots[i].sec >= min_sec)
         {
