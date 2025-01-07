@@ -182,7 +182,6 @@ static inline void brutal_tcp_snd_cwnd_set(struct tcp_sock *tp, u32 val)
 
 static void brutal_update_rate(struct sock *sk)
 {
-    int i;
     struct tcp_sock *tp = tcp_sk(sk);
     struct brutal *brutal = inet_csk_ca(sk);
 
@@ -192,7 +191,8 @@ static void brutal_update_rate(struct sock *sk)
     u32 ack_rate; // Scaled by 100 (100=1.00) as kernel doesn't support float
     u64 rate = brutal->rate;
     u32 cwnd;
-
+    int i;
+ 
     u32 mss = tp->mss_cache;
     u32 rtt_ms = (tp->srtt_us >> 3) / USEC_PER_MSEC;
     if (!rtt_ms)
