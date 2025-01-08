@@ -300,11 +300,6 @@ struct ieee80211_if_ap {
 	bool multicast_to_unicast;
 };
 
-struct ieee80211_if_wds {
-	struct sta_info *sta;
-	u8 remote_addr[ETH_ALEN];
-};
-
 struct ieee80211_if_vlan {
 	struct list_head list; /* write-protected with RTNL and local->mtx */
 
@@ -995,7 +990,6 @@ struct ieee80211_sub_if_data {
 
 	union {
 		struct ieee80211_if_ap ap;
-		struct ieee80211_if_wds wds;
 		struct ieee80211_if_vlan vlan;
 		struct ieee80211_if_managed mgd;
 		struct ieee80211_if_ibss ibss;
@@ -1722,8 +1716,7 @@ void ieee80211_scan_work(struct work_struct *work);
 int ieee80211_request_ibss_scan(struct ieee80211_sub_if_data *sdata,
 				const u8 *ssid, u8 ssid_len,
 				struct ieee80211_channel **channels,
-				unsigned int n_channels,
-				enum nl80211_bss_scan_width scan_width);
+				unsigned int n_channels);
 int ieee80211_request_scan(struct ieee80211_sub_if_data *sdata,
 			   struct cfg80211_scan_request *req);
 void ieee80211_scan_cancel(struct ieee80211_local *local);
@@ -1840,7 +1833,7 @@ void ieee80211_clear_fast_xmit(struct sta_info *sta);
 int ieee80211_tx_control_port(struct wiphy *wiphy, struct net_device *dev,
 			      const u8 *buf, size_t len,
 			      const u8 *dest, __be16 proto, bool unencrypted,
-			      u64 *cookie);
+			      int link_id, u64 *cookie);
 int ieee80211_probe_mesh_link(struct wiphy *wiphy, struct net_device *dev,
 			      const u8 *buf, size_t len);
 
@@ -2310,10 +2303,10 @@ void ieee80211_recalc_chanctx_chantype(struct ieee80211_local *local,
 
 /* TDLS */
 int ieee80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
-			const u8 *peer, u8 action_code, u8 dialog_token,
-			u16 status_code, u32 peer_capability,
-			bool initiator, const u8 *extra_ies,
-			size_t extra_ies_len);
+			const u8 *peer, int link_id,
+			u8 action_code, u8 dialog_token, u16 status_code,
+			u32 peer_capability, bool initiator,
+			const u8 *extra_ies, size_t extra_ies_len);
 int ieee80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
 			const u8 *peer, enum nl80211_tdls_operation oper);
 void ieee80211_tdls_peer_del_work(struct work_struct *wk);

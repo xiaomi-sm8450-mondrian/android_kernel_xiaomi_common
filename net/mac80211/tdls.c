@@ -6,7 +6,7 @@
  * Copyright 2014, Intel Corporation
  * Copyright 2014  Intel Mobile Communications GmbH
  * Copyright 2015 - 2016 Intel Deutschland GmbH
- * Copyright (C) 2019 Intel Corporation
+ * Copyright (C) 2019, 2021-2023 Intel Corporation
  */
 
 #include <linux/ieee80211.h>
@@ -1184,10 +1184,10 @@ ieee80211_tdls_mgmt_teardown(struct wiphy *wiphy, struct net_device *dev,
 }
 
 int ieee80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
-			const u8 *peer, u8 action_code, u8 dialog_token,
-			u16 status_code, u32 peer_capability,
-			bool initiator, const u8 *extra_ies,
-			size_t extra_ies_len)
+			const u8 *peer, int link_id,
+			u8 action_code, u8 dialog_token, u16 status_code,
+			u32 peer_capability, bool initiator,
+			const u8 *extra_ies, size_t extra_ies_len)
 {
 	struct ieee80211_sub_if_data *sdata = IEEE80211_DEV_TO_SUB_IF(dev);
 	int ret;
@@ -1927,7 +1927,7 @@ ieee80211_process_tdls_channel_switch(struct ieee80211_sub_if_data *sdata,
 	struct ieee80211_tdls_data *tf = (void *)skb->data;
 	struct wiphy *wiphy = sdata->local->hw.wiphy;
 
-	ASSERT_RTNL();
+	lockdep_assert_wiphy(wiphy);
 
 	/* make sure the driver supports it */
 	if (!(wiphy->features & NL80211_FEATURE_TDLS_CHANNEL_SWITCH))
@@ -1979,7 +1979,7 @@ void ieee80211_tdls_chsw_work(struct work_struct *wk)
 	struct sk_buff *skb;
 	struct ieee80211_tdls_data *tf;
 
-	rtnl_lock();
+	wiphy_lock(local->hw.wiphy);
 	while ((skb = skb_dequeue(&local->skb_queue_tdls_chsw))) {
 		tf = (struct ieee80211_tdls_data *)skb->data;
 		list_for_each_entry(sdata, &local->interfaces, list) {
@@ -1994,7 +1994,7 @@ void ieee80211_tdls_chsw_work(struct work_struct *wk)
 
 		kfree_skb(skb);
 	}
-	rtnl_unlock();
+	wiphy_unlock(local->hw.wiphy);
 }
 
 void ieee80211_tdls_handle_disconnect(struct ieee80211_sub_if_data *sdata,

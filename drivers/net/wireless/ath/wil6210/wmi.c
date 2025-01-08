@@ -898,7 +898,6 @@ static void wmi_evt_rx_mgmt(struct wil6210_vif *vif, int id, void *d, int len)
 		struct cfg80211_bss *bss;
 		struct cfg80211_inform_bss bss_data = {
 			.chan = channel,
-			.scan_width = NL80211_BSS_CHAN_WIDTH_20,
 			.signal = signal,
 			.boottime_ns = ktime_to_ns(ktime_get_boottime()),
 		};
@@ -1472,7 +1471,6 @@ wmi_evt_sched_scan_result(struct wil6210_vif *vif, int id, void *d, int len)
 	u32 d_len;
 	struct cfg80211_bss *bss;
 	struct cfg80211_inform_bss bss_data = {
-		.scan_width = NL80211_BSS_CHAN_WIDTH_20,
 		.boottime_ns = ktime_to_ns(ktime_get_boottime()),
 	};
 
@@ -1904,8 +1902,8 @@ wmi_evt_reassoc_status(struct wil6210_vif *vif, int id, void *d, int len)
 	freq = ieee80211_channel_to_frequency(ch, NL80211_BAND_60GHZ);
 
 	memset(&info, 0, sizeof(info));
-	info.channel = ieee80211_get_channel(wiphy, freq);
-	info.bss = vif->bss;
+	info.links[0].channel = ieee80211_get_channel(wiphy, freq);
+	info.links[0].bss = vif->bss;
 	info.req_ie = assoc_req_ie;
 	info.req_ie_len = assoc_req_ie_len;
 	info.resp_ie = assoc_resp_ie;

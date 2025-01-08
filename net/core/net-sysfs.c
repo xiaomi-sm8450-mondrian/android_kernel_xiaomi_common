@@ -713,7 +713,6 @@ static const struct attribute_group netstat_group = {
 	.attrs  = netstat_attrs,
 };
 
-#if IS_ENABLED(CONFIG_WIRELESS_EXT) || IS_ENABLED(CONFIG_CFG80211)
 static struct attribute *wireless_attrs[] = {
 	NULL
 };
@@ -722,7 +721,15 @@ static const struct attribute_group wireless_group = {
 	.name = "wireless",
 	.attrs = wireless_attrs,
 };
-#endif
+
+static bool wireless_group_needed(struct net_device *ndev)
+{
+	if (ndev->ieee80211_ptr)
+		return true;
+	if (ndev->wireless_handlers)
+		return true;
+	return false;
+}
 
 #else /* CONFIG_SYSFS */
 #define net_class_groups	NULL
@@ -1886,16 +1893,16 @@ static void netdev_release(struct device *d)
 	netdev_freemem(dev);
 }
 
-static const void *net_namespace(struct device *d)
+static const void *net_namespace(const struct device *d)
 {
-	struct net_device *dev = to_net_dev(d);
+	const struct net_device *dev = to_net_dev(d);
 
 	return dev_net(dev);
 }
 
-static void net_get_ownership(struct device *d, kuid_t *uid, kgid_t *gid)
+static void net_get_ownership(const struct device *d, kuid_t *uid, kgid_t *gid)
 {
-	struct net_device *dev = to_net_dev(d);
+	const struct net_device *dev = to_net_dev(d);
 	const struct net *net = dev_net(dev);
 
 	net_ns_get_ownership(net, uid, gid);
@@ -1984,14 +1991,8 @@ int netdev_register_kobject(struct net_device *ndev)
 
 	*groups++ = &netstat_group;
 
-#if IS_ENABLED(CONFIG_WIRELESS_EXT) || IS_ENABLED(CONFIG_CFG80211)
-	if (ndev->ieee80211_ptr)
+	if (wireless_group_needed(ndev))
 		*groups++ = &wireless_group;
-#if IS_ENABLED(CONFIG_WIRELESS_EXT)
-	else if (ndev->wireless_handlers)
-		*groups++ = &wireless_group;
-#endif
-#endif
 #endif /* CONFIG_SYSFS */
 
 	error = device_add(dev);

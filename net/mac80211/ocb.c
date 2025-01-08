@@ -43,7 +43,6 @@ void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
 	struct ieee80211_local *local = sdata->local;
 	struct ieee80211_chanctx_conf *chanctx_conf;
 	struct ieee80211_supported_band *sband;
-	enum nl80211_bss_scan_width scan_width;
 	struct sta_info *sta;
 	int band;
 
@@ -65,7 +64,6 @@ void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
 		return;
 	}
 	band = chanctx_conf->def.chan->band;
-	scan_width = cfg80211_chandef_to_scan_width(&chanctx_conf->def);
 	rcu_read_unlock();
 
 	sta = sta_info_alloc(sdata, addr, GFP_ATOMIC);
@@ -74,8 +72,7 @@ void ieee80211_ocb_rx_no_sta(struct ieee80211_sub_if_data *sdata,
 
 	/* Add only mandatory rates for now */
 	sband = local->hw.wiphy->bands[band];
-	sta->sta.supp_rates[band] =
-		ieee80211_mandatory_rates(sband, scan_width);
+	sta->sta.supp_rates[band] = ieee80211_mandatory_rates(sband);
 
 	spin_lock(&ifocb->incomplete_lock);
 	list_add(&sta->list, &ifocb->incomplete_stations);
