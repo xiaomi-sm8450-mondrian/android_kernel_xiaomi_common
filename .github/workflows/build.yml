@@ -31,7 +31,7 @@ jobs:
         cd ../
         git clone -b master --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_mayfly.git common
         cd common/
-        cat arch/arm64/configs/vendor/mayfly_GKI.config >> arch/arm64/configs/gki_defconfig
+        cat arch/arm64/configs/vendor/mayfly_GKI.config >> arch/arm64/configs/mayfly-perf_defconfig
         cd ..
         git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-devicetrees.git sm8450-devicetrees
         git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules.git sm8450-modules
@@ -41,7 +41,7 @@ jobs:
         cd $GITHUB_WORKSPACE/android-kernel
         pwd
         tree -L 2
-        LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+        LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
 
     - name: Build Kernel Package
       run: |
