@@ -11,6 +11,8 @@ KERNEL_SRC ?= /lib/modules/$(shell uname -r)/build
 # module source directory.
 M ?= $(shell pwd)
 
+ccflags-y += -Wframe-larger-than=2256
+
 ifeq ($(WLAN_ROOT),)
 # WLAN_ROOT must contain an absolute path (i.e. not a relative path)
 KBUILD_OPTIONS := WLAN_ROOT=$(shell cd $(KERNEL_SRC); readlink -e $(M))
