@@ -275,7 +275,9 @@ int usb_ep_queue(struct usb_ep *ep,
 {
 	int ret = 0;
 
-	if (WARN_ON_ONCE(!ep->enabled && ep->address)) {
+	if (!ep->enabled && ep->address) {
+		pr_debug("USB gadget: queue request to disabled ep 0x%x (%s)\n",
+				 ep->address, ep->name);
 		ret = -ESHUTDOWN;
 		goto out;
 	}
@@ -812,6 +814,19 @@ out:
 	return ret;
 }
 EXPORT_SYMBOL_GPL(usb_gadget_activate);
+
+#ifdef CONFIG_USB_FUNC_WAKEUP_SUPPORTED
+int usb_gadget_func_wakeup(struct usb_gadget *gadget, int interface_id)
+{
+	if (gadget->speed < USB_SPEED_SUPER)
+		return -EOPNOTSUPP;
+
+	if (!gadget->ops->func_wakeup)
+		return -EOPNOTSUPP;
+
+	return gadget->ops->func_wakeup(gadget, interface_id);
+}
+#endif
 
 /* ------------------------------------------------------------------------- */
 
