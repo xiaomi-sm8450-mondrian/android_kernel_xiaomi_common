@@ -60,7 +60,8 @@ jobs:
     - name: Upload Image
       uses: actions/upload-artifact@v3
       with:
-        path: /home/runner/work/android_kernel_xiaomi_mayfly/android_kernel_xiaomi_mayfly/DoraCore-GKI-5.10-mayfly-*.zip
+        # path: /home/runner/work/android_kernel_xiaomi_mayfly/android_kernel_xiaomi_mayfly/DoraCore-GKI-5.10-mayfly-*.zip
+        path: android-kernel/out/android12-5.10/dist/
         if-no-files-found: error
 
     - uses: actions/checkout@v3
