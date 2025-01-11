@@ -918,7 +918,7 @@ static int awinic_i2c_probe(struct i2c_client *i2c,
 
 		return -ENOMEM;
 
-	input_dev->name = "awinic_haptic";
+	input_dev->name = AW_HAPTIC_NAME;
 
 	awinic->dev = &i2c->dev;
 
@@ -1562,7 +1562,8 @@ MODULE_DEVICE_TABLE(i2c, awinic_i2c_id);
 
 static const struct of_device_id aw_dt_match[] = {
 
-	{ .compatible = "awinic,awinic_haptic" },
+	{ .compatible = "awinic,aw8697_haptic" },
+	{ .compatible = "awinic,aw86297_haptic" },
 
 	{},
 
@@ -1572,7 +1573,7 @@ static struct i2c_driver awinic_i2c_driver = {
 
 	.driver = {
 
-		   .name = AW_I2C_NAME,
+		   .name = AW_HAPTIC_NAME,
 
 		   .owner = THIS_MODULE,
 
