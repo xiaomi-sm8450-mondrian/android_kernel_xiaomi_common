@@ -860,7 +860,7 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 	int ret;
 
         if (task_is_booster(current))
-		return -EPERM;
+		return -EINVAL;
 
 	ret = sscanf(buf, "%15s", str_governor);
 	if (ret != 1)
