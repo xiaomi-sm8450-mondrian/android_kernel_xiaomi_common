@@ -24,11 +24,8 @@ jobs:
         rm -rf .git .github .repo
         rm -rf common
         git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
-        cd ./build
-        rm -rf _setup_env.sh
-        wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_mayfly/refs/heads/master/.github/scripts/_setup_env.sh
-        chmod +x _setup_env.sh
-        cd ../
+        rm -rf ./build
+        git clone -b master --depth=1 https://github.com/dopaemon/android_kernel_build.git ./build
         git clone -b master --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_mayfly.git common
         cd common/
         cat arch/arm64/configs/vendor/mayfly_GKI.config >> arch/arm64/configs/gki_defconfig
