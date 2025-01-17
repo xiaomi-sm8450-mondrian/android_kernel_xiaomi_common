@@ -1,5 +1,0 @@
-config PERF_HELPER
-        tristate "Perf helper"
-        default y
-        help
-          this module support some base functions for performance.
