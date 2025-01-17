@@ -31,6 +31,7 @@ jobs:
         cd ../
         git clone -b master --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_mayfly.git common
         git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules.git sm8450-modules
+        git clone -b next --single-branch --depth=1 https://github.com/rifsxd/KernelSU-Next.git ./KernelSU-Next
 
     - name: Build Kernel
       run: |

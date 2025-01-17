@@ -34,7 +34,7 @@ jobs:
         cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/mayfly-perf_defconfig
         cd ..
         git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules.git sm8450-modules.git
-        git clone -b next --single-branch --depth=1 https://github.com/rifsxd/KernelSU-Next.git
+        git clone -b next --single-branch --depth=1 https://github.com/rifsxd/KernelSU-Next.git ./KernelSU-Next
 
     - name: Build Kernel
       run: |
