@@ -1,4 +1,4 @@
-name: Linux 5.10.y Stable Android 12 | Build Normal
+name: DFA | Linux 5.10.y Stable Android 12
 
 on:
   workflow_dispatch:
