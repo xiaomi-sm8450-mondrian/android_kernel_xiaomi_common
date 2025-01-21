@@ -1,4 +1,4 @@
-name: Build android common kernel KernelSU Next
+name: Linux 5.10.y Stable Android 12 | Build KernelSU Next
 
 on:
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
         wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_mayfly/refs/heads/master/.github/scripts/_setup_env.sh
         chmod +x _setup_env.sh
         cd ../
-        git clone -b master --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_mayfly.git common
+        git clone -b Linux-5.10.y-Android-12 --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_mayfly.git common
         cd common/
         cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/mayfly-perf_defconfig
         cd ..
