@@ -29,7 +29,7 @@ jobs:
         wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
         chmod +x _setup_env.sh
         cd ../
-        git clone -b Linux-5.10.y-Android-12 --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_common.git common
+        git clone -b rebase --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_common.git common
         git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules.git sm8450-modules
 
     - name: Build Kernel
