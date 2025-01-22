@@ -2,7 +2,7 @@ env:
     CIRRUS_CLONE_DEPTH: 1
     BUILD_HOSTNAME: "DoraCore"
     TG_TOKEN: "ENCRYPTED[b6d40dfd0ee5e1970c26239ace15a3131f7f232494471474b725179690b20ecd6bbff0bd6fcaaaa41feee7d42c2040db]"
-    CIRRUS_WORKING_DIR: "/user/doraemon"
+    CIRRUS_WORKING_DIR: "/home/doraemon"
     VERSION: "DoraCore-GKI-5.10-A12-$(date '+%Y-%m%d-%H%M')"
 
 task:
