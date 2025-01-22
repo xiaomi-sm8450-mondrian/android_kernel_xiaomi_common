@@ -30,7 +30,7 @@ task:
     - git clone -b fourteen --single-branch --depth=1 https://gitlab.com/yaosp/prebuilts_clang_host_linux-x86.git prebuilts-master/clang/host/linux-x86
     - cd prebuilts-master/clang/host/linux-x86
     - ln -sf clang-r522817 clang-r547379
-    - cd cd $CIRRUS_WORKING_DIR/android-kernel
+    - cd $CIRRUS_WORKING_DIR/android-kernel
     # - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
     - cd ./build
     - rm -rf _setup_env.sh
