@@ -9,7 +9,7 @@ task:
   name: DoraCore Kernel CirrusCI
   container:
     image: ubuntu:22.04
-    cpu: 4
+    cpu: 8
     memory: 8G
 
   setup_script:
