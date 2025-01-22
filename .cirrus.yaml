@@ -11,6 +11,7 @@ task:
     image: ubuntu:22.04
     cpu: 8
     memory: 8G
+    kvm: true
 
   setup_script:
     - chmod 0777 /workdir
