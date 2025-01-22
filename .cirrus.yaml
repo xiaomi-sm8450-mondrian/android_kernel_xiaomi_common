@@ -1,0 +1,16 @@
+env:
+    CIRRUS_CLONE_DEPTH: 1
+    BUILD_HOSTNAME: "DoraCore"
+    TG_TOKEN: "ENCRYPTED[b6d40dfd0ee5e1970c26239ace15a3131f7f232494471474b725179690b20ecd6bbff0bd6fcaaaa41feee7d42c2040db]"
+    CIRRUS_WORKING_DIR: "/workdir"
+
+task:
+  name: DoraCore Kernel CirrusCI
+  container:
+    image: ubuntu:24.04
+    cpu: 4
+    memory: 8G
+
+  setup_script:
+    - chmod 0777 /workdir
+    - apt update && sudo apt install -y curl liblz4-1 libyaml-0-2 p7zip-full gcc g++ bison bc make git zip flex zipalign libssl-dev python3 gcc-aarch64-linux-gnu cpio tree vim
