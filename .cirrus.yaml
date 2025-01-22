@@ -22,7 +22,7 @@ task:
     - mkdir android-kernel && cd android-kernel
     - chmod +x ../git-repo/repo
     - ../git-repo/repo init --depth=1 --u https://github.com/dopaemon/android_kernel_xiaomi_common.git -b manifest
-    - ../git-repo/repo sync
+    - ../git-repo/repo sync --no-use-superproject
     - rm -rf .git .github .repo
     - rm -rf common
     - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
