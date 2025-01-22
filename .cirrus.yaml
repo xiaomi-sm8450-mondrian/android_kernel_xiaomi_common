@@ -27,7 +27,7 @@ task:
     - repo sync --force-sync --no-clone-bundle --no-tags | tee sync.txt
     - rm -rf .git .github .repo
     - rm -rf common
-    - git clone -b master --single-branch --depth=1 https://gitlab.com/kei-space/clang/r522817.git prebuilts-master/clang/host/linux-x86/clang-r547379
+    - git clone -b main --single-branch --depth=1 https://gitlab.com/mcdofrenchfreis/android-clang-14.0.7.git prebuilts-master/clang/host/linux-x86/clang-r547379
     - cd ./build
     - rm -rf _setup_env.sh
     - wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
