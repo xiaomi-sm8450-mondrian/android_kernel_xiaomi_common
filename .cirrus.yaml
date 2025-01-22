@@ -23,11 +23,11 @@ task:
     - curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
     - chmod a+x ~/bin/repo
     - mkdir android-kernel && cd android-kernel
-    - repo init --depth=1 -u https://github.com/dopaemon/android_kernel_xiaomi_common.git -b manifest
+    - repo init --depth=1 -u https://android.googlesource.com/kernel/build -b master-kernel-build-2021
     - repo sync --force-sync --no-clone-bundle --no-tags | tee sync.txt
     - rm -rf .git .github .repo
     - rm -rf common
-    - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
+    # - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
     - cd ./build
     - rm -rf _setup_env.sh
     - wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
