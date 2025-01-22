@@ -10,7 +10,7 @@ task:
   container:
     image: ubuntu:22.04
     cpu: 4
-    memory: 8G
+    memory: 4G
 
   setup_script:
     - chmod 0777 /workdir
