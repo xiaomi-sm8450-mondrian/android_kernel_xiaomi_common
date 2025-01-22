@@ -18,11 +18,13 @@ task:
 
   clone_script:
     - cd $CIRRUS_WORKING_DIR
-    - git clone https://gerrit.googlesource.com/git-repo
+    - mkdir ~/bin
+    - export PATH=~/bin:$PATH
+    - curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+    - chmod a+x ~/bin/repo
     - mkdir android-kernel && cd android-kernel
-    - chmod +x ../git-repo/repo
-    - ../git-repo/repo init --depth=1 --u https://github.com/dopaemon/android_kernel_xiaomi_common.git -b manifest
-    - ../git-repo/repo sync --no-use-superproject
+    - repo init --depth=1 --u https://github.com/dopaemon/android_kernel_xiaomi_common.git -b manifest
+    - repo sync -j$(nproc --all) | tee sync.txt
     - rm -rf .git .github .repo
     - rm -rf common
     - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
@@ -36,7 +38,7 @@ task:
 
   build_script:
     - cd $CIRRUS_WORKING_DIR/android-kernel
-    - LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+    - LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all) | tee log.txt
 
   compress_script:
     - cd $CIRRUS_WORKING_DIR
