@@ -3,14 +3,52 @@ env:
     BUILD_HOSTNAME: "DoraCore"
     TG_TOKEN: "ENCRYPTED[b6d40dfd0ee5e1970c26239ace15a3131f7f232494471474b725179690b20ecd6bbff0bd6fcaaaa41feee7d42c2040db]"
     CIRRUS_WORKING_DIR: "/workdir"
+    VERSION: "DoraCore-GKI-5.10-A12-$(date '+%Y-%m%d-%H%M')"
 
 task:
   name: DoraCore Kernel CirrusCI
   container:
-    image: ubuntu:24.04
+    image: ubuntu:22.04
     cpu: 4
     memory: 8G
+  only_if: $MANUAL_TRIGGER == "true"
 
   setup_script:
     - chmod 0777 /workdir
-    - apt update && sudo apt install -y curl liblz4-1 libyaml-0-2 p7zip-full gcc g++ bison bc make git zip flex zipalign libssl-dev python3 gcc-aarch64-linux-gnu cpio tree vim
+    - apt-get update -y && apt-get upgrade && apt-get install -y curl liblz4-1 libyaml-0-2 p7zip-full gcc g++ bison bc make git zip flex zipalign libssl-dev python3 gcc-aarch64-linux-gnu cpio tree vim
+
+  clone_script:
+    - cd $CIRRUS_WORKING_DIR
+    - git clone https://gerrit.googlesource.com/git-repo
+    - mkdir android-kernel && cd android-kernel
+    - chmod +x ../git-repo/repo
+    - ../git-repo/repo init --depth=1 --u https://github.com/dopaemon/android_kernel_xiaomi_common.git -b manifest
+    - ../git-repo/repo sync -j$(nproc --all)
+    - rm -rf .git .github .repo
+    - rm -rf common
+    - git clone -b 14.0 --single-branch --depth=1 https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git prebuilts-master/clang/host/linux-x86/clang-r547379
+    - cd ./build
+    - rm -rf _setup_env.sh
+    - wget https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
+    - chmod +x _setup_env.sh
+    - cd ../
+    - git clone -b Rebase --single-branch --depth=1 https://github.com/dopaemon/android_kernel_xiaomi_common.git common
+    - git clone -b lineage-22.1 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules.git sm8450-modules
+
+  build_script:
+    - cd $CIRRUS_WORKING_DIR/android-kernel
+    - LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+
+  compress_script:
+    - cd $CIRRUS_WORKING_DIR
+    - git clone -b master --depth=1 https://github.com/dopaemon/Anykernel3.git ./AnyKernel3
+    - cp -r android-kernel/out/android12-5.10/dist/Image.gz AnyKernel3/
+    - cd AnyKernel3
+    - 7z a -mx9 tmp.zip *
+    - zipalign -v 4 tmp.zip $VERSION.zip
+    - rm -rf tmp.zip
+    - mv $VERSION.zip $CIRRUS_WORKING_DIR/
+
+  telegram_script:
+    - cd $CIRRUS_WORKING_DIR
+    - echo $(curl -F document=@"$VERSION.zip" https://api.telegram.org/bot$TG_TOKEN/sendDocument?chat_id=1186034226)
