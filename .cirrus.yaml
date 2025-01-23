@@ -8,8 +8,8 @@ task:
   name: DoraCore Kernel CirrusCI
   container:
     image: dopaemon/focal:latest
-    cpu: 8
-    memory: 8G
+    cpu: 16
+    memory: 4G
     kvm: true
 
   setup_script:
