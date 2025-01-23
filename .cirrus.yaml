@@ -8,7 +8,7 @@ task:
   name: DoraCore Kernel CirrusCI
   container:
     image: dopaemon/focal:latest
-    cpu: 16
+    cpu: 12
     memory: 4G
     kvm: true
 
