@@ -51,4 +51,4 @@ task:
   telegram_script:
     - export VERSION="DoraCore-GKI-5.10-A12-$(date '+%Y-%m%d-%H%M')"
     - cd $CIRRUS_WORKING_DIR
-    - echo $(curl -F document=@"$VERSION.zip" https://api.telegram.org/bot$TG_TOKEN/sendDocument?chat_id=1186034226)
+    - echo $(curl -F document=@"$VERSION.zip" https://api.telegram.org/bot$TG_TOKEN/sendDocument?chat_id=2415264277)
