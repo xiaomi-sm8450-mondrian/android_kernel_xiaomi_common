@@ -633,7 +633,7 @@ static struct elevator_type *elevator_get_default(struct request_queue *q)
 #if defined(CONFIG_ZEN_INTERACTIVE) && defined(CONFIG_IOSCHED_BFQ)
 	return elevator_get(q, "bfq", false);
 #else
-	return elevator_get(q, "mq-deadline", false);
+	return elevator_get(q, "ssg", false);
 #endif
 }
 
