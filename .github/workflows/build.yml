@@ -78,7 +78,7 @@ jobs:
         git config --global user.name "${{ github.actor }}"
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
         mkdir -p $GITHUB_WORKSPACE/android-kernel && cd $GITHUB_WORKSPACE/android-kernel
-        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b ${{ github.event.inputs.KERNEL_BRANCH }}
+        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
         rm -rf .git .github .repo common
         git clone -b ${{ github.event.inputs.CLANG_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.CLANG_PREBUILT }} prebuilts-master/clang/host/linux-x86/clang-r547379
