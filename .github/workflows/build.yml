@@ -1,0 +1,101 @@
+name: DoraCore Kernel - Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      KERNEL_BRANCH:
+        description: 'DoraCore Branch'
+        required: true
+        default: 'Rebase'
+        type: choice
+        options:
+        - Reabase
+        - Linux-5.10.y-Android-12
+      KERNEL_GIT:
+        description: 'Kernel Source Code'
+        required: true
+        default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
+      MANIFEST_BRANCH:
+        description: 'Kernel Manifest Branch'
+        required: true
+        default: 'manifest'
+      MANIFEST_GIT:
+        description: 'Kernel Manifest Git'
+        required: true
+        default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
+      CLANG_PREBUILT:
+        description: 'Custom Clang Prebuilt Git'
+        required: true
+        default: 'https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git'
+      CLANG_BRANCH:
+        description: 'Custom Clang Prebuilt Branch'
+        required: true
+        default: '14.0'
+      BUILD_TARGET:
+        description: 'Specify your Build Target'
+        required: true
+        default: 'NonKSU'
+        type: choice
+        options:
+        - NonKSU
+        - KSU
+      ANYKERNEL_GIT:
+        description: 'AnyKernel3 Git'
+        required: true
+        default: 'https://github.com/dopaemon/Anykernel3.git'
+      ANYKERNEL_BRANCH:
+        description: 'AnyKernel3 Branch'
+        required: true
+        default: 'master'
+
+jobs:
+  build:
+    name: Build DoraCore by ${{ github.actor }}
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Clean-up
+      uses: rokibhasansagar/slimhub_actions@main
+
+    - name: Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 12
+
+    - name: Build Environment
+      run: |
+        cd $GITHUB_WORKSPACE
+        sudo apt-get update
+        sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python2 rename libelf-dev dwarves wget
+        sudo wget -O /usr/bin/repo curl http://commondatastorage.googleapis.com/git-repo-downloads/repo
+        sudo chmod +x /usr/bin/repo
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        mkdir -p $GITHUB_WORKSPACE/android-kernel && cd $GITHUB_WORKSPACE/android-kernel
+        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b ${{ github.event.inputs.KERNEL_BRANCH }}
+        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+        rm -rf .git .github .repo common
+        git clone -b ${{ github.event.inputs.CLANG_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.CLANG_PREBUILT }} prebuilts-master/clang/host/linux-x86/clang-r547379
+        rm -rf ./build/_setup_env.sh
+        wget -O ./build/_setup_env.sh https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
+        chmod +x ./build/_setup_env.sh
+        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
+        git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
+        rm -rf ./AnyKernel3/.git
+
+    - name: Setup Ksu
+      if: github.event.inputs.BUILD_TARGET == 'KSU'
+      run: |
+        cd $GITHUB_WORKSPACE/android-kernel
+        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
+
+    - name: Building DoraCore
+      run: |
+        cd $GITHUB_WORKSPACE/android-kernel
+        CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
