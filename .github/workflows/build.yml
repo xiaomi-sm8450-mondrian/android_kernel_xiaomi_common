@@ -51,7 +51,7 @@ on:
 jobs:
   build:
     name: Build DoraCore by ${{ github.actor }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
