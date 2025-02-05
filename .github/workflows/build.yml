@@ -9,7 +9,7 @@ on:
         default: 'Rebase'
         type: choice
         options:
-        - Reabase
+        - Rebase
         - Linux-5.10.y-Android-12
       KERNEL_GIT:
         description: 'Kernel Source Code'
