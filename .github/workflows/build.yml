@@ -51,6 +51,7 @@ on:
         description: 'Stable Version ?'
         required: true
         default: 'false'
+        type: choice
         options:
         - true
         - false
