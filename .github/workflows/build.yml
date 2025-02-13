@@ -100,7 +100,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
-        VERSION="DoraCore-GKI-5.10-A12-$(date '+%Y-%m%d-%H%M')"
+        VERSION="DoraCore-GKI-5.10-A12"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
         cp -r ../out/android12-5.10/dist/Image.gz ./
         zip -rv9 "$VERSION".zip *
@@ -112,7 +112,7 @@ jobs:
         cd $GITHUB_WORKSPACE/android-kernel/common
         cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
-        VERSION="DoraCore-GKI-5.10-A12-KSU-$(date '+%Y-%m%d-%H%M')"
+        VERSION="DoraCore-GKI-5.10-A12-KSU"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
         cp -r ../out/android12-5.10/dist/Image.gz ./
         zip -rv9 "$VERSION".zip *
@@ -121,4 +121,41 @@ jobs:
     - name: Signer Flashable
       run: |
        cd $GITHUB_WORKSPACE/
+       NRM_ZIP="$(ls DoraCore-GKI-5.10-A12.zip)"
+       KSU_ZIP="$(ls DoraCore-GKI-5.10-A12-KSU.zip)"
+       NRM_ZIP_SIGNER="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
+       KSU_ZIP_SIGNER="DoraCore-GKI-5.10-A12-KSU-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
        wget -O MinSignApk.jar https://github.com/HemanthJabalpuri/signapk/releases/download/5.0/MinSignApk.jar
+       chmod +x MinSignApk.jar
+       java -jar MinSignApk.jar "$NRM_ZIP" "$NRM_ZIP_SIGNER"
+       java -jar MinSignApk.jar "$KSU_ZIP" "$KSU_ZIP_SIGNER"
+       rm -rf "$NRM_ZIP" "$KSU_ZIP"
+
+    - name: Upload to Release [Beta]
+      if: github.event.inputs.PUBLIC_RELEASE == 'false'
+      uses: softprops/action-gh-release@v1
+      with:
+        prerelease: true
+        files: |
+          $GITHUB_WORKSPACE/DoraCore*.zip
+        name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          Build: DoraCore Kernel For GKI Linux 5.10.y
+          Linux: Linux 5.10.y
+          Type: GKI
+          Developer: @dopaemon
+
+    - name: Upload to Release
+      if: github.event.inputs.PUBLIC_RELEASE == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          $GITHUB_WORKSPACE/DoraCore*.zip
+        name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          Build: DoraCore Kernel For GKI Linux 5.10.y
+          Linux: Linux 5.10.y
+          Type: GKI
+          Developer: @dopaemon
