@@ -114,7 +114,7 @@ jobs:
       if: github.event.inputs.BUILD_TARGET == 'KSU'
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
-        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
+        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/gki_defconfig
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
         VERSION="DoraCore-GKI-5.10-A12-KSU"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
@@ -123,6 +123,18 @@ jobs:
         mv "$VERSION".zip $GITHUB_WORKSPACE/
 
     - name: Signer Flashable
+      if: github.event.inputs.BUILD_TARGET == 'NonKSU'
+      run: |
+       cd $GITHUB_WORKSPACE/
+       NRM_ZIP="$(ls DoraCore-GKI-5.10-A12.zip)"
+       NRM_ZIP_SIGNER="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
+       wget -O MinSignApk.jar https://github.com/HemanthJabalpuri/signapk/releases/download/5.0/MinSignApk.jar
+       chmod +x MinSignApk.jar
+       java -jar MinSignApk.jar "$NRM_ZIP" "$NRM_ZIP_SIGNER"
+       rm -rf "$NRM_ZIP"
+
+    - name: Signer Flashable
+      if: github.event.inputs.BUILD_TARGET == 'KSU'
       run: |
        cd $GITHUB_WORKSPACE/
        NRM_ZIP="$(ls DoraCore-GKI-5.10-A12.zip)"
