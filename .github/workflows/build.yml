@@ -110,7 +110,7 @@ jobs:
     - name: Building DoraCore KSU
       if: github.event.inputs.BUILD_TARGET == 'KSU'
       run: |
-        cd $GITHUB_WORKSPACE/android-kernel/common
+        cd $GITHUB_WORKSPACE/android-kernel
         cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
         VERSION="DoraCore-GKI-5.10-A12-KSU"
