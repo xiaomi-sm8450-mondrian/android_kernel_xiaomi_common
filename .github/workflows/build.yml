@@ -148,7 +148,6 @@ jobs:
     #    java -jar MinSignApk.jar "$NRM_ZIP" "$NRM_ZIP_SIGNER"
     #    java -jar MinSignApk.jar "$KSU_ZIP" "$KSU_ZIP_SIGNER"
     #    rm -rf "$NRM_ZIP" "$KSU_ZIP"
-    #    ls -lash
 
     - name: Upload to Release [Beta]
       if: github.event.inputs.PUBLIC_RELEASE == 'false'
@@ -156,7 +155,7 @@ jobs:
       with:
         prerelease: true
         files: |
-          $GITHUB_WORKSPACE/DoraCore*.zip
+          DoraCore*.zip
         name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
@@ -170,7 +169,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          $GITHUB_WORKSPACE/DoraCore*.zip
+          DoraCore*.zip
         name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
