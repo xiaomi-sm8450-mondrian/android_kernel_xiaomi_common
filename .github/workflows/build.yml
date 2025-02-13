@@ -34,7 +34,7 @@ on:
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
-        default: 'NonKSU'
+        default: 'KSU'
         type: choice
         options:
         - NonKSU
@@ -47,6 +47,13 @@ on:
         description: 'AnyKernel3 Branch'
         required: true
         default: 'master'
+      PUBLIC_RELEASE:
+        description: 'Stable Version ?'
+        required: true
+        default: 'false'
+        options:
+        - true
+        - false
 
 jobs:
   build:
@@ -72,7 +79,7 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE
         sudo apt-get update
-        sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python2 rename libelf-dev dwarves wget
+        sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python2 rename libelf-dev dwarves wget openjdk-8-jdk
         sudo wget -O /usr/bin/repo http://commondatastorage.googleapis.com/git-repo-downloads/repo
         sudo chmod +x /usr/bin/repo
         git config --global user.name "${{ github.actor }}"
@@ -89,13 +96,29 @@ jobs:
         git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
         rm -rf ./AnyKernel3/.git
 
-    - name: Setup Ksu
-      if: github.event.inputs.BUILD_TARGET == 'KSU'
-      run: |
-        cd $GITHUB_WORKSPACE/android-kernel
-        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
-
     - name: Building DoraCore
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+        VERSION="DoraCore-GKI-5.10-A12-$(date '+%Y-%m%d-%H%M')"
+        cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+        cp -r ../out/android12-5.10/dist/Image.gz ./
+        zip -rv9 "$VERSION".zip *
+        mv "$VERSION".zip $GITHUB_WORKSPACE/
+
+    - name: Building DoraCore KSU
+      if: github.event.inputs.BUILD_TARGET == 'KSU'
+      run: |
+        cd $GITHUB_WORKSPACE/android-kernel/common
+        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/common-perf_defconfig
+        CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+        VERSION="DoraCore-GKI-5.10-A12-KSU-$(date '+%Y-%m%d-%H%M')"
+        cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+        cp -r ../out/android12-5.10/dist/Image.gz ./
+        zip -rv9 "$VERSION".zip *
+        mv "$VERSION".zip $GITHUB_WORKSPACE/
+
+    - name: Signer Flashable
+      run: |
+       cd $GITHUB_WORKSPACE/
+       wget -O MinSignApk.jar https://github.com/HemanthJabalpuri/signapk/releases/download/5.0/MinSignApk.jar
