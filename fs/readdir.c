@@ -21,9 +21,6 @@
 #include <linux/unistd.h>
 #include <linux/compat.h>
 #include <linux/uaccess.h>
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs_def.h>
-#endif
 
 #include <asm/unaligned.h>
 
@@ -325,7 +322,7 @@ static int filldir64(struct dir_context *ctx, const char *name, int namlen,
 	int prev_reclen;
 
 #ifdef CONFIG_KSU_SUSFS_SUS_PATH
-	if (likely(current_cred()->user->susfs_app_profile & NON_ROOT_USER_APP_PROFILE) && susfs_sus_ino_for_filldir64(ino)) {
+	if (likely(current_cred()->user->android_kabi_reserved2 & 16777216) && susfs_sus_ino_for_filldir64(ino)) {
 		return 0;
 	}
 #endif

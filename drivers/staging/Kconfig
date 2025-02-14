@@ -122,6 +122,4 @@ source "drivers/staging/binder_prio/Kconfig"
 
 source "drivers/staging/extend_reclaim/Kconfig"
 
-source "drivers/staging/kernelsu/Kconfig"
-
 endif # STAGING

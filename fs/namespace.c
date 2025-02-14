@@ -30,9 +30,6 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#ifdef CONFIG_KSU_SUSFS
-#include <linux/susfs_def.h>
-#endif
 
 #include "pnode.h"
 #include "internal.h"
@@ -135,10 +132,10 @@ static int mnt_alloc_id(struct mount *mnt)
 static void mnt_free_id(struct mount *mnt)
 {
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	// If mnt->mnt.susfs_orig_mnt_id is not zero, it means mnt->mnt_id is spoofed,
+	// If mnt->mnt.android_kabi_reserved4 is not zero, it means mnt->mnt_id is spoofed,
 	// so here we return the original mnt_id for being freed.
-	if (unlikely(mnt->mnt.susfs_orig_mnt_id)) {
-		ida_free(&mnt_id_ida, mnt->mnt.susfs_orig_mnt_id);
+	if (unlikely(mnt->mnt.android_kabi_reserved4)) {
+		ida_free(&mnt_id_ida, mnt->mnt.android_kabi_reserved4);
 		return;
 	}
 #endif
@@ -1012,8 +1009,8 @@ struct vfsmount *vfs_create_mount(struct fs_context *fc)
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	if (susfs_is_current_zygote_domain()) {
-		mnt->mnt.susfs_orig_mnt_id = mnt->mnt_id;
-		mnt->mnt_id = current->susfs_fake_mnt_id++;
+		mnt->mnt.android_kabi_reserved4 = mnt->mnt_id;
+		mnt->mnt_id = current->android_kabi_reserved8++;
 	}
 #endif
 
@@ -1113,8 +1110,8 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 	if (susfs_is_current_zygote_domain() && !(flag & CL_SUSFS_COPY_MNT_NS)) {
-		mnt->mnt.susfs_orig_mnt_id = mnt->mnt_id;
-		mnt->mnt_id = current->susfs_fake_mnt_id++;
+		mnt->mnt.android_kabi_reserved4 = mnt->mnt_id;
+		mnt->mnt_id = current->android_kabi_reserved8++;
 	}
 #endif
 
@@ -3495,8 +3492,8 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 			p = next_mnt(p, old);
 	}
 #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
-	// current->susfs_fake_mnt_id -> to record last valid fake mnt_id to zygote pid
-	// q->mnt.susfs_orig_mnt_id -> original mnt_id
+	// current->android_kabi_reserved8 -> to record last valid fake mnt_id to zygote pid
+	// q->mnt.android_kabi_reserved4 -> original mnt_id
 	// q->mnt_id -> will be modified to the fake mnt_id
 
 	// Here We are only interested in processes of which original mnt namespace belongs to zygote 
@@ -3504,17 +3501,17 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 	if (is_zygote_pid) {
 		last_entry_mnt_id = list_first_entry(&new_ns->list, struct mount, mnt_list)->mnt_id;
 		list_for_each_entry(q, &new_ns->list, mnt_list) {
-			if (unlikely(q->mnt.mnt_root->d_inode->i_state & INODE_STATE_SUS_MOUNT)) {
+			if (unlikely(q->mnt.mnt_root->d_inode->i_state & 33554432)) {
 				continue;
 			}
-			q->mnt.susfs_orig_mnt_id = q->mnt_id;
+			q->mnt.android_kabi_reserved4 = q->mnt_id;
 			q->mnt_id = last_entry_mnt_id++;
 		}
 	}
-	// Assign the 'last_entry_mnt_id' to 'current->susfs_fake_mnt_id' for later use.
+	// Assign the 'last_entry_mnt_id' to 'current->android_kabi_reserved8' for later use.
 	// should be fine here assuming zygote is forking/unsharing app in one single thread.
 	// Or should we put a lock here?
-	current->susfs_fake_mnt_id = last_entry_mnt_id;
+	current->android_kabi_reserved8 = last_entry_mnt_id;
 #endif
 
 	namespace_unlock();
@@ -4293,7 +4290,7 @@ void susfs_run_try_umount_for_current_mnt_ns(void) {
 	namespace_lock();
 	list_for_each_entry(mnt, &mnt_ns->list, mnt_list) {
 		// Change the sus mount to be private
-		if (mnt->mnt.mnt_root->d_inode->i_state & INODE_STATE_SUS_MOUNT) {
+		if (mnt->mnt.mnt_root->d_inode->i_state & 33554432) {
 			change_mnt_propagation(mnt, MS_PRIVATE);
 		}
 	}
