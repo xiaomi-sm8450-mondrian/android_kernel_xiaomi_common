@@ -39,6 +39,7 @@ on:
         options:
         - NonKSU
         - KSU
+        - Both
       ANYKERNEL_GIT:
         description: 'AnyKernel3 Git'
         required: true
@@ -66,6 +67,7 @@ jobs:
 
     permissions:
       contents: write
+      discussions: write
 
     steps:
     - name: Checkout
@@ -101,6 +103,7 @@ jobs:
         rm -rf ./AnyKernel3/.git
 
     - name: Building DoraCore
+      if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
@@ -111,7 +114,7 @@ jobs:
         mv "$VERSION" $GITHUB_WORKSPACE/
 
     - name: Building DoraCore KSU
-      if: github.event.inputs.BUILD_TARGET == 'KSU'
+      if: github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'KSU'
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         cd ./common/
@@ -149,11 +152,11 @@ jobs:
     #    java -jar MinSignApk.jar "$KSU_ZIP" "$KSU_ZIP_SIGNER"
     #    rm -rf "$NRM_ZIP" "$KSU_ZIP"
 
-    - name: Upload to Release [Beta]
+    - name: Upload to Release [Draft]
       if: github.event.inputs.PUBLIC_RELEASE == 'false'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@master
       with:
-        prerelease: true
+        draft: true
         files: |
           DoraCore*.zip
         name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
@@ -166,7 +169,7 @@ jobs:
 
     - name: Upload to Release
       if: github.event.inputs.PUBLIC_RELEASE == 'true'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@master
       with:
         files: |
           DoraCore*.zip
