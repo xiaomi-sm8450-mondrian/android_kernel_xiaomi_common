@@ -98,7 +98,7 @@ jobs:
         rm -rf ./build/_setup_env.sh
         wget -O ./build/_setup_env.sh https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
         chmod +x ./build/_setup_env.sh
-        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
+        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --recurse-submodules -j$(nproc --all) --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
         git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
         rm -rf ./AnyKernel3/.git
 
@@ -106,6 +106,9 @@ jobs:
       if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
+        cd ./common/
+        echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
+        cd ../
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
         VERSION="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
@@ -118,7 +121,8 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         cd ./common/
-        cat arch/arm64/configs/vendor/ksu_GKI.config >> arch/arm64/configs/gki_defconfig
+        git reset --hard HEAD
+        echo "CONFIG_KSU=y" >> arch/arm64/configs/gki_defconfig
         cd ../
         CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
         VERSION="DoraCore-GKI-5.10-A12-KSU-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
