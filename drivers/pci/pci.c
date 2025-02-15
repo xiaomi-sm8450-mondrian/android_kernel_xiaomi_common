@@ -4900,8 +4900,6 @@ void pci_bridge_wait_for_secondary_bus(struct pci_dev *dev)
 		}
 	}
 
-	ret = pci_dev_wait(child, reset_type, timeout - delay);
-
 	if (!pci_device_is_present(child)) {
 		pci_dbg(child, "waiting additional %d ms to become accessible\n", delay);
 		msleep(delay);
@@ -4909,7 +4907,7 @@ void pci_bridge_wait_for_secondary_bus(struct pci_dev *dev)
 
 put_child:
 	pci_dev_put(child);
-	return ret;
+	return;
 }
 
 void pci_reset_secondary_bus(struct pci_dev *dev)
