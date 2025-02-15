@@ -398,7 +398,6 @@ void cpu_startup_entry(enum cpuhp_state state)
 		do_idle();
 }
 
-#ifndef CONFIG_SCHED_MUQSS
 /*
  * idle-task scheduling class.
  */
@@ -514,4 +513,3 @@ const struct sched_class idle_sched_class
 	.switched_to		= switched_to_idle,
 	.update_curr		= update_curr_idle,
 };
-#endif /* CONFIG_SCHED_MUQSS */
