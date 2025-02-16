@@ -327,7 +327,7 @@ static bool teo_state_ok(int i, struct cpuidle_driver *drv)
  */
 static int teo_find_shallower_state(struct cpuidle_driver *drv,
 				    struct cpuidle_device *dev, int state_idx,
-				    s64 duration_ns, , bool no_poll)
+				    s64 duration_ns, bool no_poll)
 {
 	int i;
 
