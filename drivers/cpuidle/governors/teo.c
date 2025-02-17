@@ -318,8 +318,6 @@ static void teo_update(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 		hit = 0;
 	}
 
-	trace_printk("cpu=%d sleep_id=%llu hit=%d timer_state=%d duration_state=%d sleep_length=%lld time_span=%lld measured=%lld\n", dev->cpu, cpu_data->sleep_id, hit, idx_timer, idx_duration, cpu_data->sleep_length_ns, cpu_data->time_span_ns, measured_ns);
-
 end:
 	cpu_data->total += PULSE;
 }
@@ -407,13 +405,6 @@ static int teo_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 	cpu_data->ttwu_count = rq->ttwu_count;
 	cpu_data->sched_count = rq->sched_count;
 	cpu_data->yld_count = rq->yld_count;
-
-	trace_printk(
-		"cpu=%d sleep_id=%llu sleep_length_ns=%lld max_cap=%lu util=%lu s0hit=%u s0int=%u s0rec=%u s1hit=%u rq_cpu_time=%u ttwu_count=%u sched_count=%u yld_count=%u\n",
-		dev->cpu, cpu_data->sleep_id, duration_ns, cpu_data->max_cap, sched_cpu_util(dev->cpu),
-		cpu_data->state_bins[0].hits, cpu_data->state_bins[0].intercepts, cpu_data->state_bins[0].recent,
-		cpu_data->state_bins[1].hits, rq_cpu_time_delta, ttwu_count_delta, sched_count_delta, yld_count_delta
-	);
 
 	/* Check if there is any choice in the first place. */
 	if (drv->state_count < 2) {
@@ -651,11 +642,6 @@ static void teo_reflect(struct cpuidle_device *dev, int state)
 	} else {
 		cpu_data->time_span_ns = local_clock() - cpu_data->time_span_ns;
 	}
-
-	trace_printk(
-		"cpu=%d sleep_id=%llu sleep_length_ns=%lld time_span_ns=%lld state=%d\n",
-		dev->cpu, cpu_data->sleep_id, cpu_data->sleep_length_ns, cpu_data->time_span_ns, state
-	);
 }
 
 /**
