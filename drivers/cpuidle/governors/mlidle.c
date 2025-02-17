@@ -215,7 +215,8 @@ static int mlidle_select(struct cpuidle_driver *drv, struct cpuidle_device *dev,
 	duration_ns = tick_nohz_get_sleep_length(&delta_tick);
 	cpu_data->sleep_length_ns = duration_ns;
 
-  util = sched_cpu_util(dev->cpu);
+  unsigned long max = arch_scale_cpu_capacity(dev->cpu);
+  util = sched_cpu_util(dev->cpu, max);
   rq_cpu_time_delta = rq->rq_cpu_time - cpu_data->rq_cpu_time;
   ttwu_count_delta = rq->ttwu_count - cpu_data->ttwu_count;
 
