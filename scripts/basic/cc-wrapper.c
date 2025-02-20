@@ -146,7 +146,10 @@ int main(int argc, char **argv)
 	while ((len = read(pipes[0], buf, sizeof(buf) - 1)) > 0) {
 		char *next = buf;
 
-		write(STDERR_FILENO, buf, len);
+		if (write(STDERR_FILENO, buf, len)) {
+			// just to avoid the compiler warning
+		}
+
 		buf[len] = '\0';
 
 		if (linebuf_len) {
