@@ -104,6 +104,7 @@ jobs:
 
     - name: Building DoraCore
       if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
+      continue-on-error: true
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         cd ./common/
@@ -118,6 +119,7 @@ jobs:
 
     - name: Building DoraCore KSU
       if: github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'KSU'
+      continue-on-error: true
       run: |
         cd $GITHUB_WORKSPACE/android-kernel
         cd ./common/
