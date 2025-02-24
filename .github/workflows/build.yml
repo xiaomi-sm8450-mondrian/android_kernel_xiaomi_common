@@ -118,7 +118,7 @@ jobs:
       run: |
         VERSION="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-        cp -r ../out/android12-5.10/dist/Image.gz ./
+        cp -r /home/runner/work/android_kernel_xiaomi_common/android_kernel_xiaomi_common/android-kernel/out/android12-5.10/dist/Image ./
         zip -rv9 "$VERSION" *
         mv "$VERSION" $GITHUB_WORKSPACE/
 
@@ -138,7 +138,7 @@ jobs:
       run: |
         VERSION="DoraCore-GKI-5.10-A12-KSU-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
         cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-        cp -r ../out/android12-5.10/dist/Image.gz ./
+        cp -r /home/runner/work/android_kernel_xiaomi_common/android_kernel_xiaomi_common/android-kernel/out/android12-5.10/dist/Image ./
         zip -rv9 "$VERSION" *
         mv "$VERSION" $GITHUB_WORKSPACE/
 
