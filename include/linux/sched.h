@@ -1386,25 +1386,19 @@ struct task_struct {
 	ANDROID_KABI_RESERVE(5);
 
 #if defined(CONFIG_SYSVIPC)
-	// struct sysv_sem			sysvsem;
 	ANDROID_KABI_USE(6, struct sysv_sem sysvsem);
-	// struct sysv_shm			sysvshm;
 	_ANDROID_KABI_REPLACE(ANDROID_KABI_RESERVE(7); ANDROID_KABI_RESERVE(8),
-						  struct sysv_shm sysvshm);
+							struct sysv_shm sysvshm);
 #else
 	ANDROID_KABI_RESERVE(6);
 #endif
 
 #ifdef CONFIG_KSU_SUSFS
-	ANDROID_KABI_USE(7, u64 susfs_task_state);
+	ANDROID_KABI_USE(9, u64 susfs_task_state);
+	ANDROID_KABI_USE(10, u64 susfs_last_fake_mnt_id);
 #else
-	ANDROID_KABI_RESERVE(7);
-#endif
-
-#ifdef CONFIG_KSU_SUSFS
-	ANDROID_KABI_USE(8, u64 susfs_last_fake_mnt_id);
-#else
-	ANDROID_KABI_RESERVE(8);
+	ANDROID_KABI_RESERVE(9);
+	ANDROID_KABI_RESERVE(10);
 #endif
 
 	/*
