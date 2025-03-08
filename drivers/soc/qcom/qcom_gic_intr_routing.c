@@ -467,7 +467,7 @@ static int qcom_gic_affinity_cpu_online(unsigned int cpu)
 			 * Use a sane delay (matches existing irq balancers
 			 * delay)
 			 */
-			schedule_delayed_work(&qcom_affinity_initialize_work,
+			queue_delayed_work(system_power_efficient_wq, &qcom_affinity_initialize_work,
 				msecs_to_jiffies(5000));
 		cpumask_set_cpu(cpu,
 			&qcom_gic_routing_data.class0_active_cpus);

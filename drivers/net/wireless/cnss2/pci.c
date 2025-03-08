@@ -2075,7 +2075,7 @@ static void cnss_pci_time_sync_work_hdlr(struct work_struct *work)
 	mutex_lock(&pci_priv->bus_lock);
 	cnss_pci_update_timestamp(pci_priv);
 	mutex_unlock(&pci_priv->bus_lock);
-	schedule_delayed_work(&pci_priv->time_sync_work,
+	queue_delayed_work(system_power_efficient_wq, &pci_priv->time_sync_work,
 			      msecs_to_jiffies(time_sync_period_ms));
 
 runtime_pm_put:
@@ -2898,7 +2898,7 @@ static void cnss_wlan_reg_driver_work(struct work_struct *work)
 						   CNSS_TIMEOUT_CALIBRATION);
 			cnss_pr_dbg("File system not ready to start calibration. Wait for %ds..\n",
 				    timeout / 1000);
-			schedule_delayed_work(&plat_priv->wlan_reg_driver_work,
+			queue_delayed_work(system_power_efficient_wq, &plat_priv->wlan_reg_driver_work,
 					      msecs_to_jiffies(timeout));
 			return;
 		}
@@ -3006,7 +3006,7 @@ int cnss_wlan_register_driver(struct cnss_wlan_driver *driver_ops)
 	timeout = cnss_get_timeout(plat_priv, CNSS_TIMEOUT_CALIBRATION);
 	INIT_DELAYED_WORK(&plat_priv->wlan_reg_driver_work,
 			  cnss_wlan_reg_driver_work);
-	schedule_delayed_work(&plat_priv->wlan_reg_driver_work,
+	queue_delayed_work(system_power_efficient_wq, &plat_priv->wlan_reg_driver_work,
 			      msecs_to_jiffies(timeout));
 	if (plat_priv->cbc_enabled)
 		cnss_pr_info("WLAN register driver deferred for Calibration\n");

@@ -655,7 +655,7 @@ static int rt1015_amp_drv_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		if (rt1015->hw_config == RT1015_HW_28)
-			schedule_delayed_work(&rt1015->flush_work, msecs_to_jiffies(10));
+			queue_delayed_work(system_power_efficient_wq, &rt1015->flush_work, msecs_to_jiffies(10));
 		msleep(rt1015->pdata.power_up_delay_ms);
 		break;
 	default:

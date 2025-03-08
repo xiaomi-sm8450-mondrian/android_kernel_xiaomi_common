@@ -1539,7 +1539,7 @@ static void update_eld(struct hda_codec *codec,
 				       eld->eld_size) < 0) {
 			eld->eld_valid = false;
 			if (repoll) {
-				schedule_delayed_work(&per_pin->work,
+				queue_delayed_work(system_power_efficient_wq, &per_pin->work,
 						      msecs_to_jiffies(300));
 				return;
 			}

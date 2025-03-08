@@ -568,7 +568,7 @@ static int __init cec_init(void)
 	}
 
 	INIT_DELAYED_WORK(&cec_work, cec_work_fn);
-	schedule_delayed_work(&cec_work, CEC_DECAY_DEFAULT_INTERVAL);
+	queue_delayed_work(system_power_efficient_wq, &cec_work, CEC_DECAY_DEFAULT_INTERVAL);
 
 	mce_register_decode_chain(&cec_nb);
 

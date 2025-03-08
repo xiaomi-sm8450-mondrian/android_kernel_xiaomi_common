@@ -343,7 +343,7 @@ static int otx2_rx_napi_handler(struct otx2_nic *pfvf,
 			/* Schedule a task if no other task is running */
 			if (!cq->refill_task_sched) {
 				cq->refill_task_sched = true;
-				schedule_delayed_work(dwork,
+				queue_delayed_work(system_power_efficient_wq, dwork,
 						      msecs_to_jiffies(100));
 			}
 			break;

@@ -3839,7 +3839,7 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
 	dwc3_pwr_event_handler(mdwc);
 
 	if (cpu_latency_qos_request_active(&mdwc->pm_qos_req_dma))
-		schedule_delayed_work(&mdwc->perf_vote_work,
+		queue_delayed_work(system_power_efficient_wq, &mdwc->perf_vote_work,
 			msecs_to_jiffies(1000 * PM_QOS_SAMPLE_SEC));
 
 	dwc3_msm_set_clk_sel(mdwc);
@@ -5930,7 +5930,7 @@ static void msm_dwc3_perf_vote_work(struct work_struct *w)
 
 	mdwc->irq_cnt = new;
 	msm_dwc3_perf_vote_update(mdwc, in_perf_mode);
-	schedule_delayed_work(&mdwc->perf_vote_work,
+	queue_delayed_work(system_power_efficient_wq, &mdwc->perf_vote_work,
 			msecs_to_jiffies(1000 * PM_QOS_SAMPLE_SEC));
 }
 
@@ -5947,7 +5947,7 @@ static void msm_dwc3_perf_vote_enable(struct dwc3_msm *mdwc, bool enable)
 
 		/* start in perf mode for better performance initially for host/device mode */
 		msm_dwc3_perf_vote_update(mdwc, true);
-		schedule_delayed_work(&mdwc->perf_vote_work,
+		queue_delayed_work(system_power_efficient_wq, &mdwc->perf_vote_work,
 				msecs_to_jiffies(1000 * PM_QOS_SAMPLE_SEC));
 	} else {
 		cancel_delayed_work_sync(&mdwc->perf_vote_work);

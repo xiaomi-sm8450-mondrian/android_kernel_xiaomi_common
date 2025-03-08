@@ -1154,7 +1154,7 @@ void rt5682_jack_detect_handler(struct work_struct *work)
 	if (!rt5682->is_sdw) {
 		if (rt5682->jack_type & (SND_JACK_BTN_0 | SND_JACK_BTN_1 |
 			SND_JACK_BTN_2 | SND_JACK_BTN_3))
-			schedule_delayed_work(&rt5682->jd_check_work, 0);
+			queue_delayed_work(system_power_efficient_wq, &rt5682->jd_check_work, 0);
 		else
 			cancel_delayed_work_sync(&rt5682->jd_check_work);
 	}

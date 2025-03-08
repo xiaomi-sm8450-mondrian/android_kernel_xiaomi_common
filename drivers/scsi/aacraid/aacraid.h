@@ -2648,12 +2648,12 @@ int aac_scan_host(struct aac_dev *dev);
 
 static inline void aac_schedule_safw_scan_worker(struct aac_dev *dev)
 {
-	schedule_delayed_work(&dev->safw_rescan_work, AAC_RESCAN_DELAY);
+	queue_delayed_work(system_power_efficient_wq, &dev->safw_rescan_work, AAC_RESCAN_DELAY);
 }
 
 static inline void aac_schedule_src_reinit_aif_worker(struct aac_dev *dev)
 {
-	schedule_delayed_work(&dev->src_reinit_aif_worker, AAC_RESCAN_DELAY);
+	queue_delayed_work(system_power_efficient_wq, &dev->src_reinit_aif_worker, AAC_RESCAN_DELAY);
 }
 
 static inline void aac_safw_rescan_worker(struct work_struct *work)

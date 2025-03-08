@@ -135,17 +135,17 @@ static void process_output(struct hdcp_workqueue *hdcp_work)
 		cancel_delayed_work(&hdcp_work->callback_dwork);
 
 	if (output.callback_needed)
-		schedule_delayed_work(&hdcp_work->callback_dwork,
+		queue_delayed_work(system_power_efficient_wq, &hdcp_work->callback_dwork,
 				      msecs_to_jiffies(output.callback_delay));
 
 	if (output.watchdog_timer_stop)
 		cancel_delayed_work(&hdcp_work->watchdog_timer_dwork);
 
 	if (output.watchdog_timer_needed)
-		schedule_delayed_work(&hdcp_work->watchdog_timer_dwork,
+		queue_delayed_work(system_power_efficient_wq, &hdcp_work->watchdog_timer_dwork,
 				      msecs_to_jiffies(output.watchdog_timer_delay));
 
-	schedule_delayed_work(&hdcp_work->property_validate_dwork, msecs_to_jiffies(0));
+	queue_delayed_work(system_power_efficient_wq, &hdcp_work->property_validate_dwork, msecs_to_jiffies(0));
 }
 
 static void link_lock(struct hdcp_workqueue *work, bool lock)
@@ -200,7 +200,7 @@ void hdcp_update_display(struct hdcp_workqueue *hdcp_work,
 				hdcp_w->link.adjust.hdcp2.force_type = MOD_HDCP_FORCE_TYPE_1;
 			}
 
-			schedule_delayed_work(&hdcp_w->property_validate_dwork,
+			queue_delayed_work(system_power_efficient_wq, &hdcp_w->property_validate_dwork,
 					      msecs_to_jiffies(DRM_HDCP_CHECK_PERIOD_MS));
 		} else {
 			display->adjust.disable = 1;

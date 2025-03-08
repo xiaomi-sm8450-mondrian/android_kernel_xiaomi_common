@@ -646,7 +646,7 @@ static void ines_txtstamp(struct mii_timestamper *mii_ts,
 
 	kfree_skb(old_skb);
 
-	schedule_delayed_work(&port->ts_work, 1);
+	queue_delayed_work(system_power_efficient_wq, &port->ts_work, 1);
 }
 
 static void ines_txtstamp_work(struct work_struct *work)

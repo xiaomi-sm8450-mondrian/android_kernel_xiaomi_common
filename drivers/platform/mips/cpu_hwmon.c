@@ -128,7 +128,7 @@ static void do_thermal_timer(struct work_struct *work)
 		}
 	}
 
-	schedule_delayed_work(&thermal_work, msecs_to_jiffies(5000));
+	queue_delayed_work(system_power_efficient_wq, &thermal_work, msecs_to_jiffies(5000));
 }
 
 static int __init loongson_hwmon_init(void)
@@ -153,7 +153,7 @@ static int __init loongson_hwmon_init(void)
 	}
 
 	INIT_DEFERRABLE_WORK(&thermal_work, do_thermal_timer);
-	schedule_delayed_work(&thermal_work, msecs_to_jiffies(20000));
+	queue_delayed_work(system_power_efficient_wq, &thermal_work, msecs_to_jiffies(20000));
 
 	return 0;
 }

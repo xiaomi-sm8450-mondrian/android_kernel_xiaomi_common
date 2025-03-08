@@ -1135,7 +1135,7 @@ void qedi_schedule_hw_err_handler(void *dev,
 
 	switch (err_type) {
 	case QED_HW_ERR_FAN_FAIL:
-		schedule_delayed_work(&qedi->board_disable_work, 0);
+		queue_delayed_work(system_power_efficient_wq, &qedi->board_disable_work, 0);
 		break;
 	case QED_HW_ERR_MFW_RESP_FAIL:
 	case QED_HW_ERR_HW_ATTN:
@@ -1167,7 +1167,7 @@ static void qedi_schedule_recovery_handler(void *dev)
 
 	atomic_set(&qedi->link_state, QEDI_LINK_DOWN);
 
-	schedule_delayed_work(&qedi->recovery_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &qedi->recovery_work, 0);
 }
 
 static void qedi_set_conn_recovery(struct iscsi_cls_session *cls_session)

@@ -787,7 +787,7 @@ void netvsc_linkstatus_callback(struct net_device *net,
 	list_add_tail(&event->list, &ndev_ctx->reconfig_events);
 	spin_unlock_irqrestore(&ndev_ctx->lock, flags);
 
-	schedule_delayed_work(&ndev_ctx->dwork, 0);
+	queue_delayed_work(system_power_efficient_wq, &ndev_ctx->dwork, 0);
 }
 
 static void netvsc_xdp_xmit(struct sk_buff *skb, struct net_device *ndev)
@@ -2064,7 +2064,7 @@ static void netvsc_link_change(struct work_struct *w)
 
 	/* if changes are happening, comeback later */
 	if (!rtnl_trylock()) {
-		schedule_delayed_work(&ndev_ctx->dwork, LINKCHANGE_INT);
+		queue_delayed_work(system_power_efficient_wq, &ndev_ctx->dwork, LINKCHANGE_INT);
 		return;
 	}
 
@@ -2082,7 +2082,7 @@ static void netvsc_link_change(struct work_struct *w)
 		 */
 		delay = next_reconfig - jiffies;
 		delay = delay < LINKCHANGE_INT ? delay : LINKCHANGE_INT;
-		schedule_delayed_work(&ndev_ctx->dwork, delay);
+		queue_delayed_work(system_power_efficient_wq, &ndev_ctx->dwork, delay);
 		goto out_unlock;
 	}
 	ndev_ctx->last_reconfig = jiffies;
@@ -2145,7 +2145,7 @@ static void netvsc_link_change(struct work_struct *w)
 	 * second, handle next reconfig event in 2 seconds.
 	 */
 	if (reschedule)
-		schedule_delayed_work(&ndev_ctx->dwork, LINKCHANGE_INT);
+		queue_delayed_work(system_power_efficient_wq, &ndev_ctx->dwork, LINKCHANGE_INT);
 
 	return;
 
@@ -2225,7 +2225,7 @@ static int netvsc_vf_join(struct net_device *vf_netdev,
 	 * is taken care of later in probe itself.
 	 */
 	if (context == VF_REG_IN_NOTIFIER)
-		schedule_delayed_work(&ndev_ctx->vf_takeover, VF_TAKEOVER_INT);
+		queue_delayed_work(system_power_efficient_wq, &ndev_ctx->vf_takeover, VF_TAKEOVER_INT);
 
 	call_netdevice_notifiers(NETDEV_JOIN, vf_netdev);
 
@@ -2277,7 +2277,7 @@ static void netvsc_vf_setup(struct work_struct *w)
 	struct net_device *vf_netdev;
 
 	if (!rtnl_trylock()) {
-		schedule_delayed_work(&ndev_ctx->vf_takeover, 0);
+		queue_delayed_work(system_power_efficient_wq, &ndev_ctx->vf_takeover, 0);
 		return;
 	}
 

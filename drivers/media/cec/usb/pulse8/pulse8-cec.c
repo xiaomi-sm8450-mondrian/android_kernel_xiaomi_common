@@ -828,7 +828,7 @@ static void pulse8_ping_eeprom_work_handler(struct work_struct *work)
 			pulse8->config_pending = false;
 	}
 unlock:
-	schedule_delayed_work(&pulse8->ping_eeprom_work, PING_PERIOD);
+	queue_delayed_work(system_power_efficient_wq, &pulse8->ping_eeprom_work, PING_PERIOD);
 	mutex_unlock(&pulse8->lock);
 }
 
@@ -885,7 +885,7 @@ static int pulse8_connect(struct serio *serio, struct serio_driver *drv)
 		pulse8->restoring_config = true;
 	}
 
-	schedule_delayed_work(&pulse8->ping_eeprom_work, PING_PERIOD);
+	queue_delayed_work(system_power_efficient_wq, &pulse8->ping_eeprom_work, PING_PERIOD);
 
 	return 0;
 

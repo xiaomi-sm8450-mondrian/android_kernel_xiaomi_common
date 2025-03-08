@@ -1885,10 +1885,10 @@ static void intel_hdcp_check_work(struct work_struct *work)
 		return;
 
 	if (!intel_hdcp2_check_link(connector))
-		schedule_delayed_work(&hdcp->check_work,
+		queue_delayed_work(system_power_efficient_wq, &hdcp->check_work,
 				      DRM_HDCP2_CHECK_PERIOD_MS);
 	else if (!intel_hdcp_check_link(connector))
-		schedule_delayed_work(&hdcp->check_work,
+		queue_delayed_work(system_power_efficient_wq, &hdcp->check_work,
 				      DRM_HDCP_CHECK_PERIOD_MS);
 }
 
@@ -2113,7 +2113,7 @@ int intel_hdcp_enable(struct intel_connector *connector,
 	}
 
 	if (!ret) {
-		schedule_delayed_work(&hdcp->check_work, check_link_interval);
+		queue_delayed_work(system_power_efficient_wq, &hdcp->check_work, check_link_interval);
 		intel_hdcp_update_value(connector,
 					DRM_MODE_CONTENT_PROTECTION_ENABLED,
 					true);
@@ -2324,5 +2324,5 @@ void intel_hdcp_handle_cp_irq(struct intel_connector *connector)
 	atomic_inc(&connector->hdcp.cp_irq_count);
 	wake_up_all(&connector->hdcp.cp_irq_queue);
 
-	schedule_delayed_work(&hdcp->check_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &hdcp->check_work, 0);
 }

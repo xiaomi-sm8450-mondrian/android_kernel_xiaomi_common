@@ -1122,7 +1122,7 @@ static int rkvdec_h264_run(struct rkvdec_ctx *ctx)
 
 	rkvdec_run_postamble(ctx, &run.base);
 
-	schedule_delayed_work(&rkvdec->watchdog_work, msecs_to_jiffies(2000));
+	queue_delayed_work(system_power_efficient_wq, &rkvdec->watchdog_work, msecs_to_jiffies(2000));
 
 	writel(0, rkvdec->regs + RKVDEC_REG_STRMD_ERR_EN);
 	writel(0, rkvdec->regs + RKVDEC_REG_H264_ERR_E);

@@ -754,7 +754,7 @@ static void otx2_process_pfaf_mbox_msg(struct otx2_nic *pf,
 		case MBOX_MSG_NIX_LF_START_RX:
 			config->intf_down = false;
 			dwork = &config->link_event_work;
-			schedule_delayed_work(dwork, msecs_to_jiffies(100));
+			queue_delayed_work(system_power_efficient_wq, dwork, msecs_to_jiffies(100));
 			break;
 		case MBOX_MSG_NIX_LF_STOP_RX:
 			config->intf_down = true;
@@ -862,7 +862,7 @@ int otx2_mbox_up_handler_cgx_link_event(struct otx2_nic *pf,
 		if (config->intf_down)
 			continue;
 
-		schedule_delayed_work(dwork, msecs_to_jiffies(100));
+		queue_delayed_work(system_power_efficient_wq, dwork, msecs_to_jiffies(100));
 	}
 
 	/* interface has not been fully configured yet */

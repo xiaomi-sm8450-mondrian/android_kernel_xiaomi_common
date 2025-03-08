@@ -836,7 +836,7 @@ static int qede_set_coalesce(struct net_device *dev,
 		edev->stats_coal_usecs = coal->stats_block_coalesce_usecs;
 		if (edev->stats_coal_usecs) {
 			edev->stats_coal_ticks = usecs_to_jiffies(edev->stats_coal_usecs);
-			schedule_delayed_work(&edev->periodic_task, 0);
+			queue_delayed_work(system_power_efficient_wq, &edev->periodic_task, 0);
 
 			DP_INFO(edev, "Configured stats coal ticks=%lu jiffies\n",
 				edev->stats_coal_ticks);

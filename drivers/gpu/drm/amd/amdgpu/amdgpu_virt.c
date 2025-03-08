@@ -568,7 +568,7 @@ void amdgpu_virt_update_vf2pf_work_item(struct work_struct *work)
 	amdgpu_virt_write_vf2pf_data(adev);
 
 out:
-	schedule_delayed_work(&(adev->virt.vf2pf_work), adev->virt.vf2pf_update_interval_ms);
+	queue_delayed_work(system_power_efficient_wq, &(adev->virt.vf2pf_work), adev->virt.vf2pf_update_interval_ms);
 }
 
 void amdgpu_virt_fini_data_exchange(struct amdgpu_device *adev)
@@ -591,7 +591,7 @@ void amdgpu_virt_init_data_exchange(struct amdgpu_device *adev)
 		amdgpu_virt_exchange_data(adev);
 
 		INIT_DELAYED_WORK(&adev->virt.vf2pf_work, amdgpu_virt_update_vf2pf_work_item);
-		schedule_delayed_work(&(adev->virt.vf2pf_work), msecs_to_jiffies(adev->virt.vf2pf_update_interval_ms));
+		queue_delayed_work(system_power_efficient_wq, &(adev->virt.vf2pf_work), msecs_to_jiffies(adev->virt.vf2pf_update_interval_ms));
 	} else if (adev->bios != NULL) {
 		/* got through this logic in early init stage to get necessary flags, e.g. rlcg_acc related*/
 		adev->virt.fw_reserve.p_pf2vf =

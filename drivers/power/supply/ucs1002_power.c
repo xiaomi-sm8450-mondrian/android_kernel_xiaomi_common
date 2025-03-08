@@ -450,7 +450,7 @@ static void ucs1002_health_poll(struct work_struct *work)
 
 	/* bad health and no status change, just schedule us again in a while */
 	if ((reg & F_ERR) && info->health != POWER_SUPPLY_HEALTH_GOOD) {
-		schedule_delayed_work(&info->health_poll,
+		queue_delayed_work(system_power_efficient_wq, &info->health_poll,
 				      msecs_to_jiffies(2000));
 		return;
 	}

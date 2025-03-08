@@ -255,7 +255,7 @@ dirty:
 	atomic_set(&zone->dirty, true);
 	/* flush dirty zones nicely */
 	if (wcnt == -EBUSY && !is_on_panic())
-		schedule_delayed_work(&psz_cleaner, msecs_to_jiffies(500));
+		queue_delayed_work(system_power_efficient_wq, &psz_cleaner, msecs_to_jiffies(500));
 	return -EBUSY;
 }
 
@@ -326,7 +326,7 @@ static void psz_flush_all_dirty_zones(struct work_struct *work)
 	if (cxt->fpszs)
 		ret |= psz_flush_dirty_zones(cxt->fpszs, cxt->ftrace_max_cnt);
 	if (ret && cxt->pstore_zone_info)
-		schedule_delayed_work(&psz_cleaner, msecs_to_jiffies(1000));
+		queue_delayed_work(system_power_efficient_wq, &psz_cleaner, msecs_to_jiffies(1000));
 }
 
 static int psz_kmsg_recover_data(struct psz_context *cxt)

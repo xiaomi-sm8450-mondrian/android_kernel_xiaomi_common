@@ -91,7 +91,7 @@ static void amdgpu_jpeg_idle_work_handler(struct work_struct *work)
 		amdgpu_device_ip_set_powergating_state(adev, AMD_IP_BLOCK_TYPE_JPEG,
 						       AMD_PG_STATE_GATE);
 	else
-		schedule_delayed_work(&adev->jpeg.idle_work, JPEG_IDLE_TIMEOUT);
+		queue_delayed_work(system_power_efficient_wq, &adev->jpeg.idle_work, JPEG_IDLE_TIMEOUT);
 }
 
 void amdgpu_jpeg_ring_begin_use(struct amdgpu_ring *ring)
@@ -110,7 +110,7 @@ void amdgpu_jpeg_ring_begin_use(struct amdgpu_ring *ring)
 void amdgpu_jpeg_ring_end_use(struct amdgpu_ring *ring)
 {
 	atomic_dec(&ring->adev->jpeg.total_submission_cnt);
-	schedule_delayed_work(&ring->adev->jpeg.idle_work, JPEG_IDLE_TIMEOUT);
+	queue_delayed_work(system_power_efficient_wq, &ring->adev->jpeg.idle_work, JPEG_IDLE_TIMEOUT);
 }
 
 int amdgpu_jpeg_dec_ring_test_ring(struct amdgpu_ring *ring)

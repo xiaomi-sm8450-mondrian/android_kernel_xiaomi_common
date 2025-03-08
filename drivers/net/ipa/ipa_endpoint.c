@@ -941,7 +941,7 @@ try_again_later:
 	 */
 	gsi = &endpoint->ipa->gsi;
 	if (backlog == gsi_channel_tre_max(gsi, endpoint->channel_id))
-		schedule_delayed_work(&endpoint->replenish_work,
+		queue_delayed_work(system_power_efficient_wq, &endpoint->replenish_work,
 				      msecs_to_jiffies(1));
 }
 

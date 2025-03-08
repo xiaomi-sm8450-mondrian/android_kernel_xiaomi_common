@@ -1283,7 +1283,7 @@ lpfc_idle_stat_delay_work(struct work_struct *work)
 	}
 
 requeue:
-	schedule_delayed_work(&phba->idle_stat_delay_work,
+	queue_delayed_work(system_power_efficient_wq, &phba->idle_stat_delay_work,
 			      msecs_to_jiffies(LPFC_IDLE_STAT_DELAY));
 }
 

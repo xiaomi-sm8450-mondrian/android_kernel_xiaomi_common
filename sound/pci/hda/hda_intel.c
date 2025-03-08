@@ -2226,7 +2226,7 @@ static int azx_probe(struct pci_dev *pci,
 #endif
 
 	if (schedule_probe)
-		schedule_delayed_work(&hda->probe_work, 0);
+		queue_delayed_work(system_power_efficient_wq, &hda->probe_work, 0);
 
 	dev++;
 	if (chip->disabled)
@@ -2390,7 +2390,7 @@ static int azx_probe_continue(struct azx *chip)
 		if (err) {
 			if ((chip->driver_caps & AZX_DCAPS_RETRY_PROBE) &&
 			    ++hda->probe_retry < 60) {
-				schedule_delayed_work(&hda->probe_work,
+				queue_delayed_work(system_power_efficient_wq, &hda->probe_work,
 						      msecs_to_jiffies(1000));
 				return 0; /* keep things up */
 			}

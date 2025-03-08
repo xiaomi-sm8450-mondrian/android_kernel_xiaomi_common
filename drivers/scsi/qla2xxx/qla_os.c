@@ -5200,7 +5200,7 @@ void qla24xx_create_new_sess(struct scsi_qla_host *vha, struct qla_work_evt *e)
 				}
 				fcport->fw_login_state = 0;
 
-				schedule_delayed_work(&vha->scan.scan_work, 5);
+				queue_delayed_work(system_power_efficient_wq, &vha->scan.scan_work, 5);
 			} else {
 				qla24xx_fcport_handle_login(vha, fcport);
 			}

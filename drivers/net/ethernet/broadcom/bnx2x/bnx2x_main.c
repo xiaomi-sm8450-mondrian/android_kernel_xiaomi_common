@@ -5127,7 +5127,7 @@ static void bnx2x_attn_int_deasserted(struct bnx2x *bp, u32 deasserted)
 	if (bnx2x_chk_parity_attn(bp, &global, true)) {
 #ifndef BNX2X_STOP_ON_ERROR
 		bp->recovery_state = BNX2X_RECOVERY_INIT;
-		schedule_delayed_work(&bp->sp_rtnl_task, 0);
+		queue_delayed_work(system_power_efficient_wq, &bp->sp_rtnl_task, 0);
 		/* Disable HW interrupts */
 		bnx2x_int_disable(bp);
 		/* In case of parity errors don't handle attentions so that
@@ -10070,7 +10070,7 @@ static void bnx2x_parity_recover(struct bnx2x *bp)
 					/* Wait until all other functions get
 					 * down.
 					 */
-					schedule_delayed_work(&bp->sp_rtnl_task,
+					queue_delayed_work(system_power_efficient_wq, &bp->sp_rtnl_task,
 								HZ/10);
 					return;
 				} else {
@@ -10107,7 +10107,7 @@ static void bnx2x_parity_recover(struct bnx2x *bp)
 						break;
 					}
 
-					schedule_delayed_work(&bp->sp_rtnl_task,
+					queue_delayed_work(system_power_efficient_wq, &bp->sp_rtnl_task,
 								HZ/10);
 					return;
 
@@ -10117,7 +10117,7 @@ static void bnx2x_parity_recover(struct bnx2x *bp)
 					 * for it to be cleared.
 					 */
 					if (bnx2x_reset_is_global(bp)) {
-						schedule_delayed_work(
+						queue_delayed_work(system_power_efficient_wq, 
 							&bp->sp_rtnl_task,
 							HZ/10);
 						return;

@@ -322,7 +322,7 @@ static int cpcap_charger_set_property(struct power_supply *psy,
 		if (voltage > batvolt)
 			voltage = batvolt;
 		ddata->voltage = voltage;
-		schedule_delayed_work(&ddata->detect_work, 0);
+		queue_delayed_work(system_power_efficient_wq, &ddata->detect_work, 0);
 		break;
 	default:
 		return -EINVAL;
@@ -490,7 +490,7 @@ static int cpcap_charger_set_vbus(struct phy_companion *comparator,
 			     comparator);
 
 	ddata->vbus_enabled = enabled;
-	schedule_delayed_work(&ddata->vbus_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &ddata->vbus_work, 0);
 
 	return 0;
 }
@@ -599,7 +599,7 @@ static void cpcap_charger_disconnect(struct cpcap_charger_ddata *ddata,
 
 	cpcap_charger_update_state(ddata, state);
 	power_supply_changed(ddata->usb);
-	schedule_delayed_work(&ddata->detect_work, delay);
+	queue_delayed_work(system_power_efficient_wq, &ddata->detect_work, delay);
 }
 
 static void cpcap_usb_detect(struct work_struct *work)
@@ -695,7 +695,7 @@ static irqreturn_t cpcap_charger_irq_thread(int irq, void *data)
 	if (!atomic_read(&ddata->active))
 		return IRQ_NONE;
 
-	schedule_delayed_work(&ddata->detect_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &ddata->detect_work, 0);
 
 	return IRQ_HANDLED;
 }
@@ -885,7 +885,7 @@ static int cpcap_charger_probe(struct platform_device *pdev)
 
 	cpcap_charger_init_optional_gpios(ddata);
 
-	schedule_delayed_work(&ddata->detect_work, 0);
+	queue_delayed_work(system_power_efficient_wq, &ddata->detect_work, 0);
 
 	return 0;
 }

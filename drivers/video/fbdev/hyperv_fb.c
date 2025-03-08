@@ -493,7 +493,7 @@ static void synthvid_recv_sub(struct hv_device *hdev)
 
 		par->update = msg->feature_chg.is_dirt_needed;
 		if (par->update)
-			schedule_delayed_work(&par->dwork, HVFB_UPDATE_DELAY);
+			queue_delayed_work(system_power_efficient_wq, &par->dwork, HVFB_UPDATE_DELAY);
 	}
 }
 
@@ -787,7 +787,7 @@ static void hvfb_ondemand_refresh_throttle(struct hvfb_par *par,
 
 	/* Schedule a delayed screen update if not yet */
 	if (par->delayed_refresh == false) {
-		schedule_delayed_work(&par->dwork,
+		queue_delayed_work(system_power_efficient_wq, &par->dwork,
 				      HVFB_ONDEMAND_THROTTLE);
 		par->delayed_refresh = true;
 	}
@@ -1321,8 +1321,8 @@ static int hvfb_resume(struct hv_device *hdev)
 	par->fb_ready = true;
 	par->update = par->update_saved;
 
-	schedule_delayed_work(&info->deferred_work, info->fbdefio->delay);
-	schedule_delayed_work(&par->dwork, HVFB_UPDATE_DELAY);
+	queue_delayed_work(system_power_efficient_wq, &info->deferred_work, info->fbdefio->delay);
+	queue_delayed_work(system_power_efficient_wq, &par->dwork, HVFB_UPDATE_DELAY);
 
 	/* 0 means do resume */
 	fb_set_suspend(info, 0);

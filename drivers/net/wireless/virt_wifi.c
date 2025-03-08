@@ -176,7 +176,7 @@ static int virt_wifi_scan(struct wiphy *wiphy,
 		return -EBUSY;
 
 	priv->scan_request = request;
-	schedule_delayed_work(&priv->scan_result, HZ * 2);
+	queue_delayed_work(system_power_efficient_wq, &priv->scan_result, HZ * 2);
 	if (priv->network_simulation &&
 	    priv->network_simulation->notify_scan_trigger)
 		priv->network_simulation->notify_scan_trigger(wiphy, request);
@@ -251,7 +251,7 @@ static int virt_wifi_connect(struct wiphy *wiphy, struct net_device *netdev,
 	priv->connect_requested_ssid_len = sme->ssid_len;
 	memcpy(priv->connect_requested_ssid, sme->ssid, sme->ssid_len);
 
-	could_schedule = schedule_delayed_work(&priv->connect, HZ * 2);
+	could_schedule = queue_delayed_work(system_power_efficient_wq, &priv->connect, HZ * 2);
 	if (!could_schedule)
 		return -EBUSY;
 

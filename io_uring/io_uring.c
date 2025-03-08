@@ -2275,7 +2275,7 @@ static void io_req_task_work_add(struct io_kiocb *req)
 		node = node->next;
 		if (llist_add(&req->io_task_work.fallback_node,
 			      &req->ctx->fallback_llist))
-			schedule_delayed_work(&req->ctx->fallback_work, 1);
+			queue_delayed_work(system_power_efficient_wq, &req->ctx->fallback_work, 1);
 	}
 }
 

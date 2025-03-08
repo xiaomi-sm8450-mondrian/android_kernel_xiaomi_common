@@ -94,7 +94,7 @@ static void pool_free_work(struct work_struct *wrk)
 		container_of(wrk, typeof(*pool), work.work);
 
 	if (pool_free_older_than(pool, HZ))
-		schedule_delayed_work(&pool->work,
+		queue_delayed_work(system_power_efficient_wq, &pool->work,
 				      round_jiffies_up_relative(HZ));
 }
 
@@ -140,7 +140,7 @@ static void pool_retire(struct i915_active *ref)
 	WRITE_ONCE(node->age, jiffies ?: 1); /* 0 reserved for active nodes */
 	spin_unlock_irqrestore(&pool->lock, flags);
 
-	schedule_delayed_work(&pool->work,
+	queue_delayed_work(system_power_efficient_wq, &pool->work,
 			      round_jiffies_up_relative(HZ));
 }
 

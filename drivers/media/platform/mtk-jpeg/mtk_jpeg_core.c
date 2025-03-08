@@ -924,7 +924,7 @@ static void mtk_jpeg_enc_device_run(void *priv)
 	if (ret < 0)
 		goto enc_end;
 
-	schedule_delayed_work(&jpeg->job_timeout_work,
+	queue_delayed_work(system_power_efficient_wq, &jpeg->job_timeout_work,
 			      msecs_to_jiffies(MTK_JPEG_HW_TIMEOUT_MSEC));
 
 	spin_lock_irqsave(&jpeg->hw_lock, flags);
@@ -981,7 +981,7 @@ static void mtk_jpeg_dec_device_run(void *priv)
 	if (mtk_jpeg_set_dec_dst(ctx, &jpeg_src_buf->dec_param, &dst_buf->vb2_buf, &fb))
 		goto dec_end;
 
-	schedule_delayed_work(&jpeg->job_timeout_work,
+	queue_delayed_work(system_power_efficient_wq, &jpeg->job_timeout_work,
 			      msecs_to_jiffies(MTK_JPEG_HW_TIMEOUT_MSEC));
 
 	spin_lock_irqsave(&jpeg->hw_lock, flags);

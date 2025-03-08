@@ -619,7 +619,7 @@ static void wov_copy_work(struct work_struct *w)
 		ret = wov_read_audio(priv);
 
 	if (ret == -EAGAIN)
-		schedule_delayed_work(&priv->wov_copy_work,
+		queue_delayed_work(system_power_efficient_wq, &priv->wov_copy_work,
 				      msecs_to_jiffies(10));
 	else if (ret)
 		dev_err(priv->dev, "failed to read audio data\n");
@@ -814,7 +814,7 @@ static int wov_host_event(struct notifier_block *nb,
 
 	host_event = cros_ec_get_host_event(priv->ec_device);
 	if (host_event & EC_HOST_EVENT_MASK(EC_HOST_EVENT_WOV)) {
-		schedule_delayed_work(&priv->wov_copy_work, 0);
+		queue_delayed_work(system_power_efficient_wq, &priv->wov_copy_work, 0);
 		return NOTIFY_OK;
 	} else {
 		return NOTIFY_DONE;

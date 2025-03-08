@@ -921,7 +921,7 @@ static void otx2_pool_refill_task(struct work_struct *work)
 				struct delayed_work *dwork;
 
 				dwork = &wrk->pool_refill_work;
-				schedule_delayed_work(dwork,
+				queue_delayed_work(system_power_efficient_wq, dwork,
 						      msecs_to_jiffies(100));
 			} else {
 				cq->refill_task_sched = false;
