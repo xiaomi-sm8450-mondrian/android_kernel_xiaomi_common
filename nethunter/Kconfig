@@ -297,8 +297,6 @@ config NETHUNTER_HID_SUPPORT
 
 	select HID_ALPS
 
-	select HID_QVR
-
 	select USB_HID
 
 	select HID_PID
