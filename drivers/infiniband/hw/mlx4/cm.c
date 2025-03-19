@@ -288,7 +288,7 @@ static void schedule_delayed(struct ib_device *ibdev, struct id_map_entry *id)
 	/*make sure that there is no schedule inside the scheduled work.*/
 	if (!sriov->is_going_down && !id->scheduled_delete) {
 		id->scheduled_delete = 1;
-		queue_delayed_work(system_power_efficient_wq, &id->timeout, CM_CLEANUP_CACHE_TIMEOUT);
+		schedule_delayed_work(&id->timeout, CM_CLEANUP_CACHE_TIMEOUT);
 	} else if (id->scheduled_delete) {
 		/* Adjust timeout if already scheduled */
 		mod_delayed_work(system_wq, &id->timeout, CM_CLEANUP_CACHE_TIMEOUT);
@@ -393,7 +393,7 @@ static int alloc_rej_tmout(struct mlx4_ib_sriov *sriov, u32 rem_pv_cm_id, int sl
 		return xa_err(old);
 	}
 
-	queue_delayed_work(system_power_efficient_wq, &item->timeout, CM_CLEANUP_CACHE_TIMEOUT);
+	schedule_delayed_work(&item->timeout, CM_CLEANUP_CACHE_TIMEOUT);
 
 	return 0;
 

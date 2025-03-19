@@ -319,7 +319,7 @@ static int wled_module_enable(struct wled *wled, int val)
 			 * enabling the IRQ for 10ms to ensure that the
 			 * soft start is complete.
 			 */
-			queue_delayed_work(system_power_efficient_wq, &wled->ovp_work, HZ / 100);
+			schedule_delayed_work(&wled->ovp_work, HZ / 100);
 		} else {
 			if (!cancel_delayed_work_sync(&wled->ovp_work))
 				disable_irq(wled->ovp_irq);

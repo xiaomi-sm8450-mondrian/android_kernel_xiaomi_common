@@ -6359,7 +6359,7 @@ static void rtl8xxxu_watchdog_callback(struct work_struct *work)
 	}
 
 out:
-	queue_delayed_work(system_power_efficient_wq, &priv->ra_watchdog, 2 * HZ);
+	schedule_delayed_work(&priv->ra_watchdog, 2 * HZ);
 }
 
 static int rtl8xxxu_start(struct ieee80211_hw *hw)
@@ -6427,7 +6427,7 @@ static int rtl8xxxu_start(struct ieee80211_hw *hw)
 		}
 	}
 
-	queue_delayed_work(system_power_efficient_wq, &priv->ra_watchdog, 2 * HZ);
+	schedule_delayed_work(&priv->ra_watchdog, 2 * HZ);
 exit:
 	/*
 	 * Accept all data and mgmt frames

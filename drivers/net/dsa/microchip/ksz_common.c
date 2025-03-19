@@ -94,7 +94,7 @@ static void ksz_mib_read_work(struct work_struct *work)
 		mutex_unlock(&mib->cnt_mutex);
 	}
 
-	queue_delayed_work(system_power_efficient_wq, &dev->mib_read, dev->mib_read_interval);
+	schedule_delayed_work(&dev->mib_read, dev->mib_read_interval);
 }
 
 void ksz_init_mib_timer(struct ksz_device *dev)
@@ -139,7 +139,7 @@ void ksz_mac_link_down(struct dsa_switch *ds, int port, unsigned int mode,
 	p->read = true;
 	/* timer started */
 	if (dev->mib_read_interval)
-		queue_delayed_work(system_power_efficient_wq, &dev->mib_read, 0);
+		schedule_delayed_work(&dev->mib_read, 0);
 }
 EXPORT_SYMBOL_GPL(ksz_mac_link_down);
 
@@ -451,7 +451,7 @@ int ksz_switch_register(struct ksz_device *dev,
 	dev->mib_read_interval = msecs_to_jiffies(30000);
 
 	/* Start the MIB timer. */
-	queue_delayed_work(system_power_efficient_wq, &dev->mib_read, 0);
+	schedule_delayed_work(&dev->mib_read, 0);
 
 	return 0;
 }

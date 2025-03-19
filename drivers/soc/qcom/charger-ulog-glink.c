@@ -131,7 +131,7 @@ static void chg_ulog_work(struct work_struct *work)
 	if (rc)
 		pr_err("Error requesting ulog, rc=%d\n", rc);
 	else if (cd->log_enable || cd->init_log_enable)
-		queue_delayed_work(system_power_efficient_wq, &cd->ulog_work,
+		schedule_delayed_work(&cd->ulog_work,
 					msecs_to_jiffies(cd->log_time_ms));
 }
 
@@ -293,7 +293,7 @@ static int ulog_en_set(void *data, u64 val)
 		cd->log_enable = en;
 
 	if (en)
-		queue_delayed_work(system_power_efficient_wq, &cd->ulog_work,
+		schedule_delayed_work(&cd->ulog_work,
 					msecs_to_jiffies(cd->log_time_ms));
 	else
 		cancel_delayed_work_sync(&cd->ulog_work);

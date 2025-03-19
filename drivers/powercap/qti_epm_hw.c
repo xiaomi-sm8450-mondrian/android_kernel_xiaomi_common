@@ -149,7 +149,7 @@ static int qti_epm_read_acat_10s_avg_data_common(struct epm_priv *epm,
 		if (rc == -EBUSY) {
 			dev_dbg(epm->dev,
 				"Retry avg data update after sometime\n");
-			queue_delayed_work(system_power_efficient_wq, &epm->avg_data_work,
+			schedule_delayed_work(&epm->avg_data_work,
 				EPM_AVG_SDAM_RETRY_DELAY);
 		}
 		return rc;

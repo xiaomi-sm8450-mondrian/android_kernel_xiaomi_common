@@ -464,7 +464,7 @@ static int tegra_actmon_cpu_notify_cb(struct notifier_block *nb,
 	 * warning splat.
 	 */
 	delay = msecs_to_jiffies(ACTMON_SAMPLING_PERIOD);
-	queue_delayed_work(system_power_efficient_wq, &tegra->cpufreq_update_work, delay);
+	schedule_delayed_work(&tegra->cpufreq_update_work, delay);
 
 	return NOTIFY_OK;
 }

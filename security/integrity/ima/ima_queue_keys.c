@@ -50,7 +50,7 @@ static void ima_keys_handler(struct work_struct *work)
  */
 void ima_init_key_queue(void)
 {
-	queue_delayed_work(system_power_efficient_wq, &ima_keys_delayed_work,
+	schedule_delayed_work(&ima_keys_delayed_work,
 			      msecs_to_jiffies(ima_key_queue_timeout));
 }
 

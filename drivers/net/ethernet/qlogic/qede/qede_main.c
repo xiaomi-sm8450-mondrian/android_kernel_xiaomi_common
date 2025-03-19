@@ -563,7 +563,7 @@ static void qede_tx_timeout(struct net_device *dev, unsigned int txqueue)
 
 	set_bit(QEDE_ERR_GET_DBG_INFO, &edev->err_flags);
 	set_bit(QEDE_SP_HW_ERR, &edev->sp_flags);
-	queue_delayed_work(system_power_efficient_wq, &edev->sp_task, 0);
+	schedule_delayed_work(&edev->sp_task, 0);
 }
 
 static int qede_setup_tc(struct net_device *ndev, u8 num_tc)
@@ -1014,7 +1014,7 @@ static void qede_periodic_task(struct work_struct *work)
 					     periodic_task.work);
 
 	qede_fill_by_demand_stats(edev);
-	queue_delayed_work(system_power_efficient_wq, &edev->periodic_task, edev->stats_coal_ticks);
+	schedule_delayed_work(&edev->periodic_task, edev->stats_coal_ticks);
 }
 
 static void qede_init_periodic_task(struct qede_dev *edev)
@@ -1269,7 +1269,7 @@ static int __qede_probe(struct pci_dev *pdev, u32 dp_module, u8 dp_level,
 
 	/* retain user config (for example - after recovery) */
 	if (edev->stats_coal_usecs)
-		queue_delayed_work(system_power_efficient_wq, &edev->periodic_task, 0);
+		schedule_delayed_work(&edev->periodic_task, 0);
 
 	return 0;
 
@@ -2558,7 +2558,7 @@ static void qede_schedule_recovery_handler(void *dev)
 	}
 
 	set_bit(QEDE_SP_RECOVERY, &edev->sp_flags);
-	queue_delayed_work(system_power_efficient_wq, &edev->sp_task, 0);
+	schedule_delayed_work(&edev->sp_task, 0);
 
 	DP_INFO(edev, "Scheduled a recovery handler\n");
 }
@@ -2701,7 +2701,7 @@ static void qede_schedule_hw_err_handler(void *dev,
 	qede_set_hw_err_flags(edev, err_type);
 	qede_atomic_hw_err_handler(edev);
 	set_bit(QEDE_SP_HW_ERR, &edev->sp_flags);
-	queue_delayed_work(system_power_efficient_wq, &edev->sp_task, 0);
+	schedule_delayed_work(&edev->sp_task, 0);
 
 	DP_INFO(edev, "Scheduled a error handler [err_type %d]\n", err_type);
 }
@@ -2843,7 +2843,7 @@ qede_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state)
 	netif_carrier_off(edev->ndev);
 
 	set_bit(QEDE_SP_AER, &edev->sp_flags);
-	queue_delayed_work(system_power_efficient_wq, &edev->sp_task, 0);
+	schedule_delayed_work(&edev->sp_task, 0);
 
 	__qede_unlock(edev);
 

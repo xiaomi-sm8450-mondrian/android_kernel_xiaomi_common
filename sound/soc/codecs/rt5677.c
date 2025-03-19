@@ -882,7 +882,7 @@ static int rt5677_set_dsp_vad(struct snd_soc_component *component, bool on)
 	if (!IS_ENABLED(CONFIG_SND_SOC_RT5677_SPI))
 		return -ENXIO;
 
-	queue_delayed_work(system_power_efficient_wq, &rt5677->dsp_work, 0);
+	schedule_delayed_work(&rt5677->dsp_work, 0);
 	return 0;
 }
 
@@ -4682,7 +4682,7 @@ static int rt5677_set_bias_level(struct snd_soc_component *component,
 			/* Re-enable the DSP if it was turned off at suspend */
 			rt5677->dsp_vad_en = true;
 			/* The delay is to wait for MCLK */
-			queue_delayed_work(system_power_efficient_wq, &rt5677->dsp_work,
+			schedule_delayed_work(&rt5677->dsp_work,
 					msecs_to_jiffies(1000));
 		}
 		break;
@@ -4692,7 +4692,7 @@ static int rt5677_set_bias_level(struct snd_soc_component *component,
 		if (rt5677->is_dsp_mode) {
 			/* Turn off the DSP before suspend */
 			rt5677->dsp_vad_en = false;
-			queue_delayed_work(system_power_efficient_wq, &rt5677->dsp_work, 0);
+			schedule_delayed_work(&rt5677->dsp_work, 0);
 			flush_delayed_work(&rt5677->dsp_work);
 		}
 
@@ -4992,7 +4992,7 @@ static int rt5677_resume(struct snd_soc_component *component)
 
 	if (rt5677->irq) {
 		enable_irq(rt5677->irq);
-		queue_delayed_work(system_power_efficient_wq, &rt5677->resume_irq_check, 0);
+		schedule_delayed_work(&rt5677->resume_irq_check, 0);
 	}
 
 	return 0;

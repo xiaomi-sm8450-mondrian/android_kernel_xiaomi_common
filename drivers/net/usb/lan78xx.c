@@ -1285,7 +1285,7 @@ static int lan78xx_link_reset(struct lan78xx_net *dev)
 static void lan78xx_defer_kevent(struct lan78xx_net *dev, int work)
 {
 	set_bit(work, &dev->flags);
-	if (!queue_delayed_work(system_power_efficient_wq, &dev->wq, 0))
+	if (!schedule_delayed_work(&dev->wq, 0))
 		netdev_err(dev->net, "kevent %d may have been dropped\n", work);
 }
 
@@ -3110,7 +3110,7 @@ lan78xx_start_xmit(struct sk_buff *skb, struct net_device *net)
 	struct sk_buff *skb2 = NULL;
 
 	if (test_bit(EVENT_DEV_ASLEEP, &dev->flags))
-		queue_delayed_work(system_power_efficient_wq, &dev->wq, 0);
+		schedule_delayed_work(&dev->wq, 0);
 
 	if (skb) {
 		skb_tx_timestamp(skb);

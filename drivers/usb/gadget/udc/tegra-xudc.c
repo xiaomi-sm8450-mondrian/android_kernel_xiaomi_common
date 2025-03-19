@@ -2982,7 +2982,7 @@ static void __tegra_xudc_handle_port_status(struct tegra_xudc *xudc)
 		clear_port_change(xudc, PORTSC_PRC | PORTSC_PED);
 #define TOGGLE_VBUS_WAIT_MS 100
 		if (xudc->soc->port_reset_quirk) {
-			queue_delayed_work(system_power_efficient_wq, &xudc->port_reset_war_work,
+			schedule_delayed_work(&xudc->port_reset_war_work,
 				msecs_to_jiffies(TOGGLE_VBUS_WAIT_MS));
 			xudc->wait_for_sec_prc = 1;
 		}
@@ -3039,7 +3039,7 @@ static void __tegra_xudc_handle_port_status(struct tegra_xudc *xudc)
 				tegra_xudc_port_resume(xudc);
 			break;
 		case PORTSC_PLS_INACTIVE:
-			queue_delayed_work(system_power_efficient_wq, &xudc->plc_reset_work,
+			schedule_delayed_work(&xudc->plc_reset_work,
 					msecs_to_jiffies(TOGGLE_VBUS_WAIT_MS));
 			xudc->wait_csc = true;
 			break;

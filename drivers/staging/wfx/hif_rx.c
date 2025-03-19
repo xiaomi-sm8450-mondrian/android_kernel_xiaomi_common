@@ -137,7 +137,7 @@ static int hif_event_indication(struct wfx_dev *wdev,
 		wfx_event_report_rssi(wvif, body->event_data.rcpi_rssi);
 		break;
 	case HIF_EVENT_IND_BSSLOST:
-		queue_delayed_work(system_power_efficient_wq, &wvif->beacon_loss_work, 0);
+		schedule_delayed_work(&wvif->beacon_loss_work, 0);
 		break;
 	case HIF_EVENT_IND_BSSREGAINED:
 		cancel_delayed_work(&wvif->beacon_loss_work);

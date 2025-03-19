@@ -56,7 +56,7 @@ void wfx_suspend_hot_dev(struct wfx_dev *wdev, enum sta_notify_cmd cmd)
 			wfx_tx_unlock(wdev);
 	} else {
 		// Device is too hot
-		queue_delayed_work(system_power_efficient_wq, &wdev->cooling_timeout_work, 10 * HZ);
+		schedule_delayed_work(&wdev->cooling_timeout_work, 10 * HZ);
 		wfx_tx_lock(wdev);
 	}
 }
@@ -254,7 +254,7 @@ static void wfx_beacon_loss_work(struct work_struct *work)
 	struct ieee80211_bss_conf *bss_conf = &wvif->vif->bss_conf;
 
 	ieee80211_beacon_loss(wvif->vif);
-	queue_delayed_work(system_power_efficient_wq, to_delayed_work(work),
+	schedule_delayed_work(to_delayed_work(work),
 			      msecs_to_jiffies(bss_conf->beacon_int));
 }
 

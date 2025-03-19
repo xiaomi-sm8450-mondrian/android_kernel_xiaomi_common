@@ -154,7 +154,7 @@ static irqreturn_t ls_pcie_g4_isr(int irq, void *dev_id)
 
 	if (val & PAB_INTP_RESET) {
 		ls_pcie_g4_disable_interrupt(pcie);
-		queue_delayed_work(system_power_efficient_wq, &pcie->dwork, msecs_to_jiffies(1));
+		schedule_delayed_work(&pcie->dwork, msecs_to_jiffies(1));
 	}
 
 	mobiveil_csr_writel(mv_pci, val, PAB_INTP_AMBA_MISC_STAT);

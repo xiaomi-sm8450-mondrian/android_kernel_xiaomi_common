@@ -1330,7 +1330,7 @@ static void rx_timestamp_work(struct work_struct *work)
 	}
 
 	if (!skb_queue_empty(&dp83640->rx_queue))
-		queue_delayed_work(system_power_efficient_wq, &dp83640->ts_work, SKB_TIMESTAMP_TIMEOUT);
+		schedule_delayed_work(&dp83640->ts_work, SKB_TIMESTAMP_TIMEOUT);
 }
 
 static bool dp83640_rxtstamp(struct mii_timestamper *mii_ts,
@@ -1375,7 +1375,7 @@ static bool dp83640_rxtstamp(struct mii_timestamper *mii_ts,
 		skb_info->ptp_type = type;
 		skb_info->tmo = jiffies + SKB_TIMESTAMP_TIMEOUT;
 		skb_queue_tail(&dp83640->rx_queue, skb);
-		queue_delayed_work(system_power_efficient_wq, &dp83640->ts_work, SKB_TIMESTAMP_TIMEOUT);
+		schedule_delayed_work(&dp83640->ts_work, SKB_TIMESTAMP_TIMEOUT);
 	} else {
 		netif_rx_ni(skb);
 	}
