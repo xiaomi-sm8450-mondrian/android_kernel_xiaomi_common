@@ -7326,7 +7326,7 @@ static void lpfc_init_idle_stat_hb(struct lpfc_hba *phba)
 	}
 
 	if (!phba->nvmet_support)
-		queue_delayed_work(system_power_efficient_wq, &phba->idle_stat_delay_work,
+		schedule_delayed_work(&phba->idle_stat_delay_work,
 				      msecs_to_jiffies(LPFC_IDLE_STAT_DELAY));
 }
 

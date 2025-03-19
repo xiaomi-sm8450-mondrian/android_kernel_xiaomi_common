@@ -438,7 +438,7 @@ static int send_forget_request(struct virtio_fs_vq *fsvq,
 			pr_debug("virtio-fs: Could not queue FORGET: err=%d. Will try later\n",
 				 ret);
 			list_add_tail(&forget->list, &fsvq->queued_reqs);
-			queue_delayed_work(system_power_efficient_wq, &fsvq->dispatch_work,
+			schedule_delayed_work(&fsvq->dispatch_work,
 					      msecs_to_jiffies(1));
 			if (!in_flight)
 				inc_in_flight_req(fsvq);

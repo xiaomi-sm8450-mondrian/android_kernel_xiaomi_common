@@ -319,7 +319,7 @@ static struct fc_seq *qedf_elsct_send(struct fc_lport *lport, u32 did,
 	if (resp == fc_lport_flogi_resp) {
 		qedf->flogi_cnt++;
 		if (qedf->flogi_pending >= QEDF_FLOGI_RETRY_CNT) {
-			queue_delayed_work(system_power_efficient_wq, &qedf->stag_work, 2);
+			schedule_delayed_work(&qedf->stag_work, 2);
 			return NULL;
 		}
 		qedf->flogi_pending++;
@@ -3858,7 +3858,7 @@ void qedf_schedule_hw_err_handler(void *dev, enum qed_hw_err_type err_type)
 
 	switch (err_type) {
 	case QED_HW_ERR_FAN_FAIL:
-		queue_delayed_work(system_power_efficient_wq, &qedf->board_disable_work, 0);
+		schedule_delayed_work(&qedf->board_disable_work, 0);
 		break;
 	case QED_HW_ERR_MFW_RESP_FAIL:
 	case QED_HW_ERR_HW_ATTN:
@@ -4019,7 +4019,7 @@ static void qedf_schedule_recovery_handler(void *dev)
 	struct qedf_ctx *qedf = dev;
 
 	QEDF_ERR(&qedf->dbg_ctx, "Recovery handler scheduled.\n");
-	queue_delayed_work(system_power_efficient_wq, &qedf->recovery_work, 0);
+	schedule_delayed_work(&qedf->recovery_work, 0);
 }
 
 static void qedf_recovery_handler(struct work_struct *work)

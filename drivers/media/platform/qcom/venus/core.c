@@ -42,7 +42,7 @@ static void venus_event_notify(struct venus_core *core, u32 event)
 	mutex_unlock(&core->lock);
 
 	disable_irq_nosync(core->irq);
-	queue_delayed_work(system_power_efficient_wq, &core->work, msecs_to_jiffies(10));
+	schedule_delayed_work(&core->work, msecs_to_jiffies(10));
 }
 
 static const struct hfi_core_ops venus_core_ops = {
@@ -123,7 +123,7 @@ static void venus_sys_error_handler(struct work_struct *work)
 		dev_warn_ratelimited(core->dev,
 				     "System error has occurred, recovery failed to %s\n",
 				     err_msg);
-		queue_delayed_work(system_power_efficient_wq, &core->work, msecs_to_jiffies(10));
+		schedule_delayed_work(&core->work, msecs_to_jiffies(10));
 		return;
 	}
 

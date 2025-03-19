@@ -95,7 +95,7 @@ static void mapping_free_item(struct mapping_ctx *ctx,
 	list_add_tail(&mi->list, &ctx->pending_list);
 	spin_unlock(&ctx->pending_list_lock);
 
-	queue_delayed_work(system_power_efficient_wq, &ctx->dwork, MAPPING_GRACE_PERIOD);
+	schedule_delayed_work(&ctx->dwork, MAPPING_GRACE_PERIOD);
 }
 
 int mapping_remove(struct mapping_ctx *ctx, u32 id)
@@ -171,7 +171,7 @@ static void mapping_work_handler(struct work_struct *work)
 	mapping_remove_and_free_list(ctx, &pending_items);
 
 	if (min_timeout)
-		queue_delayed_work(system_power_efficient_wq, &ctx->dwork, abs(min_timeout - now));
+		schedule_delayed_work(&ctx->dwork, abs(min_timeout - now));
 }
 
 static void mapping_flush_work(struct mapping_ctx *ctx)

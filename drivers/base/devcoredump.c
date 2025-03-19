@@ -51,7 +51,7 @@ struct devcd_entry {
 	 *                                                   del_timer()
 	 *                                                     debug_assert_init()
 	 *       INIT_DELAYED_WORK()
-	 *       queue_delayed_work(system_power_efficient_wq, )
+	 *       schedule_delayed_work()
 	 *
 	 *
 	 * Also, mutex alone would not be enough to avoid scheduling of

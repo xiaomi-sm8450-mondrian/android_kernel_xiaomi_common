@@ -2402,7 +2402,7 @@ static void ovs_dp_masks_rebalance(struct work_struct *work)
 
 	ovs_unlock();
 
-	queue_delayed_work(system_power_efficient_wq, &ovs_net->masks_rebalance,
+	schedule_delayed_work(&ovs_net->masks_rebalance,
 			      msecs_to_jiffies(DP_MASKS_REBALANCE_INTERVAL));
 }
 
@@ -2507,7 +2507,7 @@ static int __net_init ovs_init_net(struct net *net)
 	if (err)
 		return err;
 
-	queue_delayed_work(system_power_efficient_wq, &ovs_net->masks_rebalance,
+	schedule_delayed_work(&ovs_net->masks_rebalance,
 			      msecs_to_jiffies(DP_MASKS_REBALANCE_INTERVAL));
 	return 0;
 }

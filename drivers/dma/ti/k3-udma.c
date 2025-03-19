@@ -994,7 +994,7 @@ static void udma_check_tx_completion(struct work_struct *work)
 					uc->tx_drain.residue;
 			} else {
 				/* No progress, check again in 1 second  */
-				queue_delayed_work(system_power_efficient_wq, &uc->tx_drain.work, HZ);
+				schedule_delayed_work(&uc->tx_drain.work, HZ);
 				break;
 			}
 
@@ -1064,7 +1064,7 @@ static irqreturn_t udma_ring_irq_handler(int irq, void *data)
 					udma_start(uc);
 					vchan_cookie_complete(&d->vd);
 				} else {
-					queue_delayed_work(system_power_efficient_wq, &uc->tx_drain.work,
+					schedule_delayed_work(&uc->tx_drain.work,
 							      0);
 				}
 			}

@@ -3208,7 +3208,7 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
 			instance->ev = ev;
 			INIT_DELAYED_WORK(&ev->hotplug_work,
 					  megasas_aen_polling);
-			queue_delayed_work(system_power_efficient_wq, &ev->hotplug_work, 0);
+			schedule_delayed_work(&ev->hotplug_work, 0);
 		}
 	}
 }

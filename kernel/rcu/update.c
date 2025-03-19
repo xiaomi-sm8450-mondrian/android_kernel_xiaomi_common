@@ -208,7 +208,7 @@ void rcu_end_inkernel_boot(void)
 		u64 boot_ms = div_u64(ktime_get_boot_fast_ns(), 1000000UL);
 
 		if (boot_ms < boot_end_delay) {
-			queue_delayed_work(system_power_efficient_wq, &boot_rcu_work,
+			schedule_delayed_work(&boot_rcu_work,
 					msecs_to_jiffies(boot_end_delay - boot_ms));
 			return;
 		}

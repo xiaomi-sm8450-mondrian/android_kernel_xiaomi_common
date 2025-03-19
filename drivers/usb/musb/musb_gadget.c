@@ -1073,7 +1073,7 @@ static int musb_gadget_enable(struct usb_ep *ep,
 			musb_ep->dma ? "dma, " : "",
 			musb_ep->packet_sz);
 
-	queue_delayed_work(system_power_efficient_wq, &musb->irq_work, 0);
+	schedule_delayed_work(&musb->irq_work, 0);
 
 fail:
 	spin_unlock_irqrestore(&musb->lock, flags);
@@ -1116,7 +1116,7 @@ static int musb_gadget_disable(struct usb_ep *ep)
 	musb_ep->desc = NULL;
 	musb_ep->end_point.desc = NULL;
 
-	queue_delayed_work(system_power_efficient_wq, &musb->irq_work, 0);
+	schedule_delayed_work(&musb->irq_work, 0);
 
 	spin_unlock_irqrestore(&(musb->lock), flags);
 
@@ -1660,7 +1660,7 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	spin_lock_irqsave(&musb->lock, flags);
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;
-		queue_delayed_work(system_power_efficient_wq, &musb->gadget_work, 0);
+		schedule_delayed_work(&musb->gadget_work, 0);
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
 
@@ -1913,7 +1913,7 @@ static int musb_gadget_stop(struct usb_gadget *g)
 	 */
 
 	/* Force check of devctl register for PM runtime */
-	queue_delayed_work(system_power_efficient_wq, &musb->irq_work, 0);
+	schedule_delayed_work(&musb->irq_work, 0);
 
 	pm_runtime_mark_last_busy(musb->controller);
 	pm_runtime_put_autosuspend(musb->controller);

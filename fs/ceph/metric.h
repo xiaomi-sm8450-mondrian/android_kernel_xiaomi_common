@@ -132,7 +132,7 @@ static inline void metric_schedule_delayed(struct ceph_client_metric *m)
 		return;
 
 	/* per second */
-	queue_delayed_work(system_power_efficient_wq, &m->delayed_work, round_jiffies_relative(HZ));
+	schedule_delayed_work(&m->delayed_work, round_jiffies_relative(HZ));
 }
 
 extern int ceph_metric_init(struct ceph_client_metric *m);

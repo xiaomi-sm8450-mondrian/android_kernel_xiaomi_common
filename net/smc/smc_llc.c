@@ -1771,7 +1771,7 @@ static void smc_llc_testlink_work(struct work_struct *work)
 	}
 	next_interval = link->llc_testlink_time;
 out:
-	queue_delayed_work(system_power_efficient_wq, &link->llc_testlink_wrk, next_interval);
+	schedule_delayed_work(&link->llc_testlink_wrk, next_interval);
 }
 
 void smc_llc_lgr_init(struct smc_link_group *lgr, struct smc_sock *smc)
@@ -1823,7 +1823,7 @@ void smc_llc_link_active(struct smc_link *link)
 	link->state = SMC_LNK_ACTIVE;
 	if (link->lgr->llc_testlink_time) {
 		link->llc_testlink_time = link->lgr->llc_testlink_time;
-		queue_delayed_work(system_power_efficient_wq, &link->llc_testlink_wrk,
+		schedule_delayed_work(&link->llc_testlink_wrk,
 				      link->llc_testlink_time);
 	}
 }

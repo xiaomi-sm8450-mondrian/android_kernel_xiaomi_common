@@ -502,7 +502,7 @@ static void efx_filter_rfs_expire(struct work_struct *data)
 	if (quota >= 20 && __efx_filter_rfs_expire(channel, min(channel->rfs_filter_count, quota)))
 		channel->rfs_last_expiry += time;
 	/* Ensure we do more work eventually even if NAPI poll is not happening */
-	queue_delayed_work(system_power_efficient_wq, dwork, 30 * HZ);
+	schedule_delayed_work(dwork, 30 * HZ);
 }
 #endif
 

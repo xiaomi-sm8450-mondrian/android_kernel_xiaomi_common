@@ -47,7 +47,7 @@ static int imx_sc_key_notify(struct notifier_block *nb,
 					      key_notifier);
 
 	if ((event & SC_IRQ_BUTTON) && (*(u8 *)group == SC_IRQ_GROUP_WAKE)) {
-		queue_delayed_work(system_power_efficient_wq, &priv->check_work,
+		schedule_delayed_work(&priv->check_work,
 				      msecs_to_jiffies(DEBOUNCE_TIME));
 		pm_wakeup_event(priv->input->dev.parent, 0);
 	}
@@ -95,7 +95,7 @@ static void imx_sc_check_for_events(struct work_struct *work)
 	}
 
 	if (state)
-		queue_delayed_work(system_power_efficient_wq, &priv->check_work,
+		schedule_delayed_work(&priv->check_work,
 				      msecs_to_jiffies(REPEAT_INTERVAL));
 }
 

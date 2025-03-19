@@ -43,7 +43,7 @@ static void i915_globals_shrink(void)
 static void __i915_globals_grace(struct rcu_head *rcu)
 {
 	/* Ratelimit parking as shrinking is quite slow */
-	queue_delayed_work(system_power_efficient_wq, &park.work, round_jiffies_up_relative(2 * HZ));
+	schedule_delayed_work(&park.work, round_jiffies_up_relative(2 * HZ));
 }
 
 static void __i915_globals_queue_rcu(void)

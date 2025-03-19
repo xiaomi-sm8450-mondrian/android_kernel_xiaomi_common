@@ -1192,7 +1192,7 @@ static void bark_work_func(struct work_struct *work)
 			return;
 
 		/* Re-arm the work */
-		queue_delayed_work(system_power_efficient_wq, &pon->bark_work, QPNP_KEY_STATUS_DELAY);
+		schedule_delayed_work(&pon->bark_work, QPNP_KEY_STATUS_DELAY);
 	}
 }
 
@@ -1222,7 +1222,7 @@ static irqreturn_t qpnp_resin_bark_irq(int irq, void *_pon)
 	input_sync(pon->pon_input);
 
 	/* Schedule work to check the bark status for key-release */
-	queue_delayed_work(system_power_efficient_wq, &pon->bark_work, QPNP_KEY_STATUS_DELAY);
+	schedule_delayed_work(&pon->bark_work, QPNP_KEY_STATUS_DELAY);
 
 	return IRQ_HANDLED;
 }

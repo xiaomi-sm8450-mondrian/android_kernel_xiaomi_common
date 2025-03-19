@@ -690,7 +690,7 @@ static irqreturn_t omap8250_irq(int irq, void *dev_id)
 		spin_unlock(&port->lock);
 
 		delay = msecs_to_jiffies(up->overrun_backoff_time_ms);
-		queue_delayed_work(system_power_efficient_wq, &up->overrun_backoff, delay);
+		schedule_delayed_work(&up->overrun_backoff, delay);
 	}
 
 	serial8250_rpm_put(up);

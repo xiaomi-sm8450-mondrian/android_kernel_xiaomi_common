@@ -1269,7 +1269,7 @@ static int emac_open(struct net_device *ndev)
 		}
 		dev->link_polling = 1;
 		wmb();
-		queue_delayed_work(system_power_efficient_wq, &dev->link_work, link_poll_interval);
+		schedule_delayed_work(&dev->link_work, link_poll_interval);
 		emac_print_link_status(dev);
 	} else
 		netif_carrier_on(dev->ndev);
@@ -1365,7 +1365,7 @@ static void emac_link_timer(struct work_struct *work)
 		}
 		link_poll_interval = PHY_POLL_LINK_OFF;
 	}
-	queue_delayed_work(system_power_efficient_wq, &dev->link_work, link_poll_interval);
+	schedule_delayed_work(&dev->link_work, link_poll_interval);
  bail:
 	mutex_unlock(&dev->link_lock);
 }
@@ -1377,7 +1377,7 @@ static void emac_force_link_update(struct emac_instance *dev)
 	if (dev->link_polling) {
 		cancel_delayed_work_sync(&dev->link_work);
 		if (dev->link_polling)
-			queue_delayed_work(system_power_efficient_wq, &dev->link_work,  PHY_POLL_LINK_OFF);
+			schedule_delayed_work(&dev->link_work,  PHY_POLL_LINK_OFF);
 	}
 }
 

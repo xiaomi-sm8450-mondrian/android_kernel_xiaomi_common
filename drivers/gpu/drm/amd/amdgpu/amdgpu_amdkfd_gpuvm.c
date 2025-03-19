@@ -1732,7 +1732,7 @@ int amdgpu_amdkfd_evict_userptr(struct kgd_mem *mem,
 		r = kgd2kfd_quiesce_mm(mm);
 		if (r)
 			pr_err("Failed to quiesce KFD\n");
-		queue_delayed_work(system_power_efficient_wq, &process_info->restore_userptr_work,
+		schedule_delayed_work(&process_info->restore_userptr_work,
 			msecs_to_jiffies(AMDGPU_USERPTR_RESTORE_DELAY_MS));
 	}
 
@@ -2002,7 +2002,7 @@ unlock_out:
 
 	/* If validation failed, reschedule another attempt */
 	if (evicted_bos)
-		queue_delayed_work(system_power_efficient_wq, &process_info->restore_userptr_work,
+		schedule_delayed_work(&process_info->restore_userptr_work,
 			msecs_to_jiffies(AMDGPU_USERPTR_RESTORE_DELAY_MS));
 }
 

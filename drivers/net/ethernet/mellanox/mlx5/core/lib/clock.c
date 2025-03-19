@@ -170,7 +170,7 @@ static long mlx5_timestamp_overflow(struct ptp_clock_info *ptp_info)
 	write_sequnlock_irqrestore(&clock->lock, flags);
 
 out:
-	queue_delayed_work(system_power_efficient_wq, &timer->overflow_work, timer->overflow_period);
+	schedule_delayed_work(&timer->overflow_work, timer->overflow_period);
 }
 
 static int mlx5_ptp_settime(struct ptp_clock_info *ptp, const struct timespec64 *ts)
@@ -652,7 +652,7 @@ static void mlx5_init_overflow_period(struct mlx5_clock *clock)
 
 	INIT_DELAYED_WORK(&timer->overflow_work, mlx5_timestamp_overflow);
 	if (timer->overflow_period)
-		queue_delayed_work(system_power_efficient_wq, &timer->overflow_work, 0);
+		schedule_delayed_work(&timer->overflow_work, 0);
 	else
 		mlx5_core_warn(mdev,
 			       "invalid overflow period, overflow_work is scheduled once per second\n");

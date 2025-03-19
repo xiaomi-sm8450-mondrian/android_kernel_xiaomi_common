@@ -366,7 +366,7 @@ static void rt5677_spi_copy_work(struct work_struct *work)
 	}
 
 	delay = bytes_to_frames(runtime, period_bytes) / (runtime->rate / 1000);
-	queue_delayed_work(system_power_efficient_wq, &rt5677_dsp->copy_work, msecs_to_jiffies(delay));
+	schedule_delayed_work(&rt5677_dsp->copy_work, msecs_to_jiffies(delay));
 done:
 	mutex_unlock(&rt5677_dsp->dma_lock);
 }
@@ -595,7 +595,7 @@ void rt5677_spi_hotword_detected(void)
 	rt5677_dsp->new_hotword = true;
 	mutex_unlock(&rt5677_dsp->dma_lock);
 
-	queue_delayed_work(system_power_efficient_wq, &rt5677_dsp->copy_work, 0);
+	schedule_delayed_work(&rt5677_dsp->copy_work, 0);
 }
 EXPORT_SYMBOL_GPL(rt5677_spi_hotword_detected);
 
