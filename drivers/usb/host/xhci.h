@@ -819,9 +819,6 @@ struct xhci_command {
 
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
-
-	/* xHCI command response timeout in milliseconds */
-	unsigned int			timeout_ms;
 };
 
 /* drop context bitmasks */
