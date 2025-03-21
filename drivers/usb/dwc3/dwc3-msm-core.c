@@ -586,7 +586,7 @@ struct dwc3_msm {
 	bool			use_eusb2_phy;
 	int			refcnt_dp_usb;
 	enum dp_lane		dp_state;
-
+	bool			usb_data_enabled;
 	bool			force_disconnect;
 };
 
@@ -4464,6 +4464,9 @@ static bool dwc3_msm_role_allowed(struct dwc3_msm *mdwc, enum usb_role role)
 	if (role == USB_ROLE_DEVICE && mdwc->dr_mode == USB_DR_MODE_HOST)
 		return false;
 
+	if (!mdwc->usb_data_enabled && role != USB_ROLE_NONE)
+		return false;
+
 	return true;
 }
 
@@ -4737,11 +4740,39 @@ static ssize_t bus_vote_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(bus_vote);
 
+static ssize_t usb_data_enabled_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+	struct dwc3_msm *mdwc = dev_get_drvdata(dev);
+
+	return sysfs_emit(buf, "%s\n",
+			  mdwc->usb_data_enabled ? "enabled" : "disabled");
+}
+
+static ssize_t usb_data_enabled_store(struct device *dev,
+        struct device_attribute *attr,
+        const char *buf, size_t count)
+{
+	struct dwc3_msm *mdwc = dev_get_drvdata(dev);
+	bool enabled;
+
+	if (kstrtobool(buf, &enabled))
+		return -EINVAL;
+
+	mdwc->usb_data_enabled = enabled;
+	if (!enabled)
+		dwc3_msm_set_role(mdwc, USB_ROLE_NONE);
+
+	return count;
+}
+static DEVICE_ATTR_RW(usb_data_enabled);
+
 static struct attribute *dwc3_msm_attrs[] = {
 	&dev_attr_orientation.attr,
 	&dev_attr_mode.attr,
 	&dev_attr_speed.attr,
 	&dev_attr_bus_vote.attr,
+	&dev_attr_usb_data_enabled.attr,
 	NULL
 };
 ATTRIBUTE_GROUPS(dwc3_msm);
@@ -5260,6 +5291,9 @@ static int dwc3_msm_check_extcon_prop(struct platform_device *pdev)
 		mdwc->apsd_source = REMOTE_PROC;
 	else
 		mdwc->apsd_source = PSY;
+
+	/* set the initial value */
+	mdwc->usb_data_enabled = true;
 
 	if (of_property_read_bool(node, "extcon")) {
 		ret = dwc3_msm_extcon_register(mdwc);
