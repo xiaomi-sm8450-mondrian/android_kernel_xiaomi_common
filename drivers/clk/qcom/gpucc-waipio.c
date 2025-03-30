@@ -53,9 +53,9 @@ static struct pll_vco lucid_evo_vco[] = {
 };
 
 static struct alpha_pll_config gpu_cc_pll0_config = {
-	.l = 0x24,
+	.l = 0x1D,
 	.cal_l = 0x44,
-	.alpha = 0x7555,
+	.alpha = 0xB000,
 	.config_ctl_val = 0x20485699,
 	.config_ctl_hi_val = 0x00182261,
 	.config_ctl_hi1_val = 0x32AA299C,
@@ -102,12 +102,11 @@ static struct clk_alpha_pll gpu_cc_pll0 = {
 			.vdd_class = &vdd_mxc,
 			.num_rate_max = VDD_NUM,
 			.rate_max = (unsigned long[VDD_NUM]) {
-				[VDD_LOWER_D1] = 500000000,
-				[VDD_LOWER] = 615000000,
-				[VDD_LOW] = 1066000000,
-				[VDD_LOW_L1] = 1500000000,
-				[VDD_NOMINAL] = 1750000000,
-				[VDD_HIGH] = 2000000000},
+				[VDD_LOWER_D1] = 400000000,  // 500MHz → 400MHz
+				[VDD_LOWER] = 550000000,  // 615MHz → 550MHz
+				[VDD_LOW] = 1000000000,  // 1066MHz → 1000MHz
+				[VDD_LOW_L1] = 1400000000,  // 1500MHz → 1400MHz
+				[VDD_NOMINAL] = 1500000000},  // 1750MHz → 1600MHz
 		},
 	},
 };
@@ -151,12 +150,11 @@ static struct clk_alpha_pll gpu_cc_pll1 = {
 			.vdd_class = &vdd_mx,
 			.num_rate_max = VDD_NUM,
 			.rate_max = (unsigned long[VDD_NUM]) {
-				[VDD_LOWER_D1] = 500000000,
-				[VDD_LOWER] = 615000000,
-				[VDD_LOW] = 1066000000,
-				[VDD_LOW_L1] = 1500000000,
-				[VDD_NOMINAL] = 1750000000,
-				[VDD_HIGH] = 2000000000},
+				[VDD_LOWER_D1] = 400000000,  // 500MHz → 400MHz
+				[VDD_LOWER] = 550000000,  // 615MHz → 550MHz
+				[VDD_LOW] = 1000000000,  // 1066MHz → 1000MHz
+				[VDD_LOW_L1] = 1400000000,  // 1500MHz → 1400MHz
+				[VDD_NOMINAL] = 1500000000},  // 1750MHz → 1600MHz
 		},
 	},
 };
@@ -242,7 +240,7 @@ static struct clk_rcg2 gpu_cc_ff_clk_src = {
 static const struct freq_tbl ftbl_gpu_cc_gmu_clk_src[] = {
 	F(19200000, P_BI_TCXO, 1, 0, 0),
 	F(200000000, P_GPLL0_OUT_MAIN_DIV, 1.5, 0, 0),
-	F(500000000, P_GPU_CC_PLL1_OUT_MAIN, 2, 0, 0),
+	F(300000000, P_GPU_CC_PLL1_OUT_MAIN, 1, 0, 0), // ここを 1.5 から 1 に修正して無駄なクロックを削減
 	{ }
 };
 
@@ -810,7 +808,7 @@ static const struct of_device_id gpu_cc_waipio_match_table[] = {
 };
 MODULE_DEVICE_TABLE(of, gpu_cc_waipio_match_table);
 
-static void gpu_cc_cape_fixup(struct regmap *regmap)
+static void __maybe_unused gpu_cc_cape_fixup(struct regmap *regmap)
 {
 	/* Update GPUCC PLL0 Config */
 	gpu_cc_pll0_config.l = 0x1D;
@@ -819,7 +817,7 @@ static void gpu_cc_cape_fixup(struct regmap *regmap)
 	gpu_cc_pll0_config.alpha = 0xB000;
 	gpu_cc_pll0_config.config_ctl_val = 0x20485699;
 	gpu_cc_pll0_config.config_ctl_hi_val = 0x00182261;
-	gpu_cc_pll0_config.config_ctl_hi1_val = 0x82AA299C;
+	gpu_cc_pll0_config.config_ctl_hi1_val = 0x12AA099C;  // さらに低電力向けの設定	
 	gpu_cc_pll0_config.test_ctl_val = 0x00000000;
 	gpu_cc_pll0_config.test_ctl_hi_val = 0x00000003;
 	gpu_cc_pll0_config.test_ctl_hi1_val = 0x00009000;
@@ -829,12 +827,13 @@ static void gpu_cc_cape_fixup(struct regmap *regmap)
 
 	gpu_cc_pll0.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_LUCID_OLE];
 	gpu_cc_pll0.clkr.hw.init = &gpu_cc_pll0_cape_init;
-	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 615000000;
-	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOWER] = 0;
-	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOW] = 1100000000;
-	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOW_L1] = 1600000000;
-	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_NOMINAL] = 2000000000;
+	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 500000000;
+	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOWER] = 800000000;
+	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOW] = 1000000000;  // ここを少し下げる
+	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_LOW_L1] = 1400000000;  // ここも下げる
+	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_NOMINAL] = 1800000000;  // ここも下げる
 	gpu_cc_pll0.clkr.vdd_data.rate_max[VDD_HIGH] = 0;
+
 
 	/* Update GPUCC PLL1 Config */
 	gpu_cc_pll1_config.l = 0x34;
@@ -853,12 +852,13 @@ static void gpu_cc_cape_fixup(struct regmap *regmap)
 
 	gpu_cc_pll1.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_LUCID_OLE];
 	gpu_cc_pll1.clkr.hw.init = &gpu_cc_pll1_cape_init;
-	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 615000000;
-	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOWER] = 0;
-	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOW] = 1100000000;
-	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOW_L1] = 1600000000;
-	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_NOMINAL] = 2000000000;
+	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 500000000;
+	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOWER] = 800000000;
+	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOW] = 1000000000;  // ここを少し下げる
+	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_LOW_L1] = 1400000000;  // ここも下げる
+	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_NOMINAL] = 1800000000;  // ここも下げる
 	gpu_cc_pll1.clkr.vdd_data.rate_max[VDD_HIGH] = 0;
+
 
 	gpu_cc_ff_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 200000000;
 	gpu_cc_gmu_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 200000000;
@@ -868,7 +868,7 @@ static void gpu_cc_cape_fixup(struct regmap *regmap)
 	gpu_cc_xo_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 19200000;
 }
 
-static void gpu_cc_waipio_fixup_waipiov2(struct regmap *regmap)
+static void __maybe_unused gpu_cc_waipio_fixup_waipiov2(struct regmap *regmap)
 {
 	gpu_cc_pll0.config = &gpu_cc_pll0_config_waipio_v2;
 
@@ -881,21 +881,19 @@ static void gpu_cc_waipio_fixup_waipiov2(struct regmap *regmap)
 
 static int gpu_cc_waipio_fixup(struct platform_device *pdev, struct regmap *regmap)
 {
-	const char *compat = NULL;
-	int compatlen = 0;
+	clk_lucid_evo_pll_configure(&gpu_cc_pll0, regmap, &gpu_cc_pll0_config);
 
-	compat = of_get_property(pdev->dev.of_node, "compatible", &compatlen);
-	if (!compat || compatlen <= 0)
-		return -EINVAL;
-
-	if (!strcmp(compat, "qcom,waipio-gpucc-v2"))
-		gpu_cc_waipio_fixup_waipiov2(regmap);
-
-	if (!strcmp(compat, "qcom,cape-gpucc"))
-		gpu_cc_cape_fixup(regmap);
+	// v2 のクロック制限を無印にも適用
+	gpu_cc_ff_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 200000000;
+	gpu_cc_gmu_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 200000000;
+	gpu_cc_hub_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 150000000;
+	gpu_cc_hub_clk_src.clkr.vdd_data.rate_max[VDD_LOW_L0] = 400000000;
+	gpu_cc_hub_clk_src.clkr.vdd_data.rate_max[VDD_NOMINAL] = 500000000;
+	gpu_cc_xo_clk_src.clkr.vdd_data.rate_max[VDD_LOWER_D1] = 19200000;
 
 	return 0;
 }
+
 
 static int gpu_cc_waipio_probe(struct platform_device *pdev)
 {
