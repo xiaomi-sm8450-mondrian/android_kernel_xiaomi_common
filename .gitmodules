@@ -1,4 +1,0 @@
-[submodule "drivers/staging/kernelsu"]
-	path = drivers/staging/kernelsu
-	url = https://github.com/rifsxd/KernelSU-Next
-	branch = next-susfs-dev
