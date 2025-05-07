@@ -176,13 +176,6 @@
 /* Max load for eMMC Vdd-io supply */
 #define MMC_VQMMC_MAX_LOAD_UA	325000
 
-<<<<<<< HEAD
-/* Max load for SD Vdd supply */
-#define SD_VMMC_MAX_LOAD_UA	800000
-
-/* Max load for SD Vdd-io supply */
-#define SD_VQMMC_MAX_LOAD_UA	22000
-=======
 /*
  * Due to level shifter insertion, HS mode frequency is reduced to 37.5MHz
  * but clk's driver supply 37MHz only and uses ceil ops. So vote for
@@ -202,7 +195,12 @@
 #define VS_CAPABILITIES_SDR_50_SUPPORT BIT(0)
 #define VS_CAPABILITIES_SDR_104_SUPPORT BIT(1)
 #define VS_CAPABILITIES_DDR_50_SUPPORT BIT(2)
->>>>>>> 75f04ea2e9025dd2e5513280f4c773f5882ca32f
+
+/* Max load for SD Vdd supply */
+#define SD_VMMC_MAX_LOAD_UA	800000
+
+/* Max load for SD Vdd-io supply */
+#define SD_VQMMC_MAX_LOAD_UA	22000
 
 #define msm_host_readl(msm_host, host, offset) \
 	msm_host->var_ops->msm_readl_relaxed(host, offset)
@@ -1620,44 +1618,6 @@ static int sdhci_msm_set_pincfg(struct sdhci_msm_host *msm_host, bool level)
 	return ret;
 }
 
-<<<<<<< HEAD
-static void msm_config_vmmc_regulator(struct mmc_host *mmc, bool hpm)
-{
-	int load;
-
-	if (!hpm)
-		load = 0;
-	else if (!mmc->card)
-		load = max(MMC_VMMC_MAX_LOAD_UA, SD_VMMC_MAX_LOAD_UA);
-	else if (mmc_card_mmc(mmc->card))
-		load = MMC_VMMC_MAX_LOAD_UA;
-	else if (mmc_card_sd(mmc->card))
-		load = SD_VMMC_MAX_LOAD_UA;
-	else
-		return;
-
-	regulator_set_load(mmc->supply.vmmc, load);
-}
-
-static void msm_config_vqmmc_regulator(struct mmc_host *mmc, bool hpm)
-{
-	int load;
-
-	if (!hpm)
-		load = 0;
-	else if (!mmc->card)
-		load = max(MMC_VQMMC_MAX_LOAD_UA, SD_VQMMC_MAX_LOAD_UA);
-	else if (mmc_card_sd(mmc->card))
-		load = SD_VQMMC_MAX_LOAD_UA;
-	else
-		return;
-
-	regulator_set_load(mmc->supply.vqmmc, load);
-}
-
-static int sdhci_msm_set_vmmc(struct sdhci_msm_host *msm_host,
-			      struct mmc_host *mmc, bool hpm)
-=======
 static int sdhci_msm_dt_parse_hsr_info(struct device *dev,
 		struct sdhci_msm_host *msm_host)
 
@@ -1777,8 +1737,42 @@ out:
 	return true;
 }
 
-static int sdhci_msm_set_vmmc(struct mmc_host *mmc)
->>>>>>> 75f04ea2e9025dd2e5513280f4c773f5882ca32f
+static void msm_config_vmmc_regulator(struct mmc_host *mmc, bool hpm)
+{
+	int load;
+
+	if (!hpm)
+		load = 0;
+	else if (!mmc->card)
+		load = max(MMC_VMMC_MAX_LOAD_UA, SD_VMMC_MAX_LOAD_UA);
+	else if (mmc_card_mmc(mmc->card))
+		load = MMC_VMMC_MAX_LOAD_UA;
+	else if (mmc_card_sd(mmc->card))
+		load = SD_VMMC_MAX_LOAD_UA;
+	else
+		return;
+
+	regulator_set_load(mmc->supply.vmmc, load);
+}
+
+static void msm_config_vqmmc_regulator(struct mmc_host *mmc, bool hpm)
+{
+	int load;
+
+	if (!hpm)
+		load = 0;
+	else if (!mmc->card)
+		load = max(MMC_VQMMC_MAX_LOAD_UA, SD_VQMMC_MAX_LOAD_UA);
+	else if (mmc_card_sd(mmc->card))
+		load = SD_VQMMC_MAX_LOAD_UA;
+	else
+		return;
+
+	regulator_set_load(mmc->supply.vqmmc, load);
+}
+
+static int sdhci_msm_set_vmmc(struct sdhci_msm_host *msm_host,
+			      struct mmc_host *mmc, bool hpm)
 {
 	if (IS_ERR(mmc->supply.vmmc))
 		return 0;
