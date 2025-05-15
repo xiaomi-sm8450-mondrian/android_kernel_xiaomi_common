@@ -115,7 +115,7 @@ jobs:
 
     strategy:
       matrix:
-        device: ${{ split(inputs.BUILD_DEVICE, ',') }}
+        device: ${{ fromJson(format('["{0}"]', join('","', split(github.event.inputs.BUILD_DEVICE, ',')))) }}
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
