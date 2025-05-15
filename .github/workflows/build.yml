@@ -79,7 +79,7 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          devices=$(echo "${{ github.event.inputs.BUILD_DEVICE }}" | tr ',' '\n' | jq -R . | jq -s .)
+          devices=$(echo "${{ github.event.inputs.BUILD_DEVICE }}" | tr ',' '\n' | jq -R . | jq -s -c .)
           echo "matrix=$devices" >> $GITHUB_OUTPUT
 
   create_release:
