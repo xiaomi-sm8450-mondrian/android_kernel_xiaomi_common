@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 5
 PATCHLEVEL = 10
-SUBLEVEL = 237
-EXTRAVERSION =
+SUBLEVEL = 238
+EXTRAVERSION = -rc1
 NAME = Dare mighty things
 
 # indicate that change "Kbuild: Support nested composite objects" is
