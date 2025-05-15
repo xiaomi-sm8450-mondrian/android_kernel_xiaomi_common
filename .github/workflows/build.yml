@@ -82,9 +82,8 @@ jobs:
           devices=$(echo "${{ github.event.inputs.BUILD_DEVICE }}" | tr ',' '\n' | jq -R . | jq -s .)
           echo "matrix=$devices" >> $GITHUB_OUTPUT
 
-jobs:
-  needs: prepare-matrix
   create_release:
+    needs: prepare-matrix
     runs-on: ubuntu-latest
 
     outputs:
