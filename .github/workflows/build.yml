@@ -21,7 +21,7 @@ on:
         default: 'mayfly'
         type: choice
         options:
-        - "mayfly,cupid,zeus,unicorn,diting,mondrian,thor,zizhan,ziyi,gki"
+        - mayfly,cupid,zeus,unicorn,diting,mondrian,thor,zizhan,ziyi,gki
         - mayfly
         - cupid
         - unicorn
