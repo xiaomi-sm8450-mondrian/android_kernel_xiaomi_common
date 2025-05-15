@@ -15,7 +15,7 @@ on:
         description: 'Kernel Source Code'
         required: true
         default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
-      BUILD_DEVICES:
+      BUILD_DEVICE:
         description: 'Device Target'
         required: true
         default: 'mayfly'
