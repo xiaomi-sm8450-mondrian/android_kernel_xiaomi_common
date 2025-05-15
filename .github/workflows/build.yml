@@ -1,4 +1,4 @@
-name: DoraCore Kernel - Build
+name: DoraCore Kernel Build
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ on:
         default: 'mayfly'
         type: choice
         options:
-        - all
+        - "mayfly,cupid,zeus,unicorn,diting,mondrian,thor,zizhan,ziyi,gki"
         - mayfly
         - cupid
         - unicorn
@@ -72,9 +72,11 @@ on:
         - release
 
 jobs:
-  build:
-    name: Build DoraCore by ${{ github.actor }}
-    runs-on: ubuntu-24.04
+  create_release:
+    runs-on: ubuntu-latest
+
+    outputs:
+      tag: ${{ steps.set-tag.outputs.tag }}
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,90 +86,79 @@ jobs:
       discussions: write
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # - name: Clean-up
-    #   uses: rokibhasansagar/slimhub_actions@main
+      - name: Set tag as timestamp
+        id: set-tag
+        run: echo "tag=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
 
-    # - name: Swap Space
-    #   uses: pierotofy/set-swap-space@master
-    #   with:
-    #     swap-size-gb: 12
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.set-tag.outputs.tag }}
+          name: DoraCore Build ${{ steps.set-tag.outputs.tag }}
+          draft: ${{ github.event.inputs.RELEASE == 'draft' }}
+          prerelease: ${{ github.event.inputs.RELEASE == 'prerelease' }}
+          body: |
+            Build: DoraCore Kernel For GKI Linux 5.10.y
+            Linux: Linux 5.10.y
+            Type: GKI
+            Developer: @dopaemon
+            Credits: @ArianK16a, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, ...
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build Environment
-      run: |
-        echo "BUILD_DATE=$(TZ=Asia/Ho_Chi_Minh date +'%Y-%m%d-%H%M')" >> $GITHUB_ENV
-        cd $GITHUB_WORKSPACE
-        sudo apt-get update
-        sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler rename libelf-dev dwarves wget openjdk-8-jdk
-        sudo wget -O /usr/bin/repo http://commondatastorage.googleapis.com/git-repo-downloads/repo
-        sudo chmod +x /usr/bin/repo
-        git config --global user.name "${{ github.actor }}"
-        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        mkdir -p $GITHUB_WORKSPACE/android-kernel && cd $GITHUB_WORKSPACE/android-kernel
-        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b manifest
-        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
-        git clone -b build --single-branch https://github.com/dopaemon/android_kernel_xiaomi_common.git build
-        rm -rf .git .github .repo common
-        git clone -b ${{ github.event.inputs.CLANG_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.CLANG_PREBUILT }} prebuilts-master/clang/host/linux-x86/clang-r416183b
-        rm -rf ./build/_setup_env.sh
-        wget -O ./build/_setup_env.sh https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
-        chmod +x ./build/_setup_env.sh
-        git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --recurse-submodules -j$(nproc --all) --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
-        git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules sm8450-modules
-        git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-devicetrees sm8450-devicetrees
-        git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
-        rm -rf ./AnyKernel3/.git
+  build:
+    needs: create_release
+    runs-on: ubuntu-latest
 
-    - name: Build Selected Devices NonKSU
-      if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
-      run: |
-        set -e
-        DEVICES="${{ github.event.inputs.BUILD_DEVICE }}"
-        if [[ "$DEVICES" == "all" ]]; then
-          DEVICES="mayfly cupid zeus unicorn diting mondrian thor zizhan ziyi gki"
-        fi
+    strategy:
+      matrix:
+        device: ${{ fromJson(format('["{0}"]', join('","', split(inputs.BUILD_DEVICE, ',')))) }}
 
-        for DEVICE in $DEVICES; do
-          echo "::group::[+] Building for $DEVICE"
-          cd $GITHUB_WORKSPACE/android-kernel
-          cd ./common/
-          git reset --hard HEAD
-          rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
+    permissions:
+      contents: write
+      discussions: write
 
-          if [ "$DEVICE" != "gki" ]; then
-             cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
-             cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
-             cat arch/arm64/configs/vendor/"$DEVICE"_GKI.config >> arch/arm64/configs/gki_defconfig
-             cat arch/arm64/configs/vendor/debugfs.config >> arch/arm64/configs/gki_defconfig
-          fi
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-          cd ../
-          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+      - name: Build Environment
+        run: |
+          echo "BUILD_DATE=$(TZ=Asia/Ho_Chi_Minh date +'%Y-%m%d-%H%M')" >> $GITHUB_ENV
+          cd $GITHUB_WORKSPACE
+          sudo apt-get update
+          sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler rename libelf-dev dwarves wget openjdk-8-jdk
+          sudo wget -O /usr/bin/repo http://commondatastorage.googleapis.com/git-repo-downloads/repo
+          sudo chmod +x /usr/bin/repo
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          mkdir -p $GITHUB_WORKSPACE/android-kernel && cd $GITHUB_WORKSPACE/android-kernel
+          repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b manifest
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          git clone -b build --single-branch https://github.com/dopaemon/android_kernel_xiaomi_common.git build
+          rm -rf .git .github .repo common
+          git clone -b ${{ github.event.inputs.CLANG_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.CLANG_PREBUILT }} prebuilts-master/clang/host/linux-x86/clang-r416183b
+          rm -rf ./build/_setup_env.sh
+          wget -O ./build/_setup_env.sh https://raw.githubusercontent.com/dopaemon/android_kernel_xiaomi_common/refs/heads/master/.github/scripts/_setup_env.sh
+          chmod +x ./build/_setup_env.sh
+          git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --recurse-submodules -j$(nproc --all) --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
+          git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-modules sm8450-modules
+          git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-devicetrees sm8450-devicetrees
+          git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
+          rm -rf ./AnyKernel3/.git
 
-          # Make flashable ZIP
-          ZIP_NAME="DoraCore-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
-          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
-          zip -r9 "$ZIP_NAME" *
-          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
-          echo "::endgroup::"
-        done
+      - name: Build Selected Devices KSU
+        if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
 
-    - name: Build Selected Devices KSU
-      if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both'
-      run: |
-        set -e
-        DEVICES="${{ github.event.inputs.BUILD_DEVICE }}"
-        if [[ "$DEVICES" == "all" ]]; then
-          DEVICES="mayfly cupid zeus unicorn diting mondrian thor zizhan ziyi gki"
-        fi
-
-        for DEVICE in $DEVICES; do
-          echo "::group::[+] Building for $DEVICE"
           cd $GITHUB_WORKSPACE/android-kernel
           cd ./common/
           git reset --hard HEAD
@@ -189,21 +180,40 @@ jobs:
           cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
           zip -r9 "$ZIP_NAME" *
           mv "$ZIP_NAME" $GITHUB_WORKSPACE/
-          echo "::endgroup::"
-        done
 
-    - name: Upload to Release
-      uses: softprops/action-gh-release@master
-      with:
-        draft: ${{ github.event.inputs.RELEASE == 'draft' }}
-        prerelease: ${{ github.event.inputs.RELEASE == 'prerelease' }}
-        files: |
-          DoraCore*.zip
-        name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          Build: DoraCore Kernel For GKI Linux 5.10.y
-          Linux: Linux 5.10.y
-          Type: GKI
-          Developer: @dopaemon
-          Credits: @ArianK16a, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, ...
+      - name: Build Selected Devices NonKSU
+        if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
+
+          cd $GITHUB_WORKSPACE/android-kernel
+          cd ./common/
+          git reset --hard HEAD
+          rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
+          echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
+
+          if [ "$DEVICE" != "gki" ]; then
+             cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
+             cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
+             cat arch/arm64/configs/vendor/"$DEVICE"_GKI.config >> arch/arm64/configs/gki_defconfig
+             cat arch/arm64/configs/vendor/debugfs.config >> arch/arm64/configs/gki_defconfig
+          fi
+
+          cd ../
+          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+
+          # Make flashable ZIP
+          ZIP_NAME="DoraCore-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
+          zip -r9 "$ZIP_NAME" *
+          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.create_release.outputs.tag }}
+          files: DoraCore*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
