@@ -21,7 +21,7 @@ on:
         default: 'mayfly'
         type: choice
         options:
-        - mayfly,cupid,zeus,unicorn,diting,mondrian,thor,zizhan,ziyi,gki
+        - 'mayfly,cupid,zeus,unicorn,diting,mondrian,thor,zizhan,ziyi,gki'
         - mayfly
         - cupid
         - unicorn
@@ -72,6 +72,18 @@ on:
         - release
 
 jobs:
+  prepare-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          devices=$(echo "${{ github.event.inputs.BUILD_DEVICE }}" | tr ',' '\n' | jq -R . | jq -s .)
+          echo "matrix=$devices" >> $GITHUB_OUTPUT
+
+jobs:
+  needs: prepare-matrix
   create_release:
     runs-on: ubuntu-latest
 
