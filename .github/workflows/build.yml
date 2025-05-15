@@ -78,35 +78,37 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
+        shell: bash
+        env:
+          BUILD_DEVICE: ${{ github.event.inputs.BUILD_DEVICE }}
         run: |
-          if [ "${{ github.event.inputs.BUILD_DEVICE }}" = "mayfly" ]; then
+          if [ "$BUILD_DEVICE" = "mayfly" ]; then
             matrix='["mayfly"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "cupid" ]; then
+          elif [ "$BUILD_DEVICE" = "cupid" ]; then
             matrix='["cupid"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "zeus" ]; then
+          elif [ "$BUILD_DEVICE" = "zeus" ]; then
             matrix='["zeus"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "unicorn" ]; then
+          elif [ "$BUILD_DEVICE" = "unicorn" ]; then
             matrix='["unicorn"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "diting" ]; then
+          elif [ "$BUILD_DEVICE" = "diting" ]; then
             matrix='["diting"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "mondrian" ]; then
+          elif [ "$BUILD_DEVICE" = "mondrian" ]; then
             matrix='["mondrian"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "thor" ]; then
+          elif [ "$BUILD_DEVICE" = "thor" ]; then
             matrix='["thor"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "zizhan" ]; then
+          elif [ "$BUILD_DEVICE" = "zizhan" ]; then
             matrix='["zizhan"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "ziyi" ]; then
+          elif [ "$BUILD_DEVICE" = "ziyi" ]; then
             matrix='["ziyi"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "gki" ]; then
+          elif [ "$BUILD_DEVICE" = "gki" ]; then
             matrix='["gki"]'
-          elif [ "${{ github.event.inputs.BUILD_DEVICE }}" = "all" ]; then
+          elif [ "$BUILD_DEVICE" = "all" ]; then
             matrix='["mayfly", "cupid", "unicorn", "zeus", "diting", "mondrian", "thor", "zizhan", "ziyi", "gki"]'
           fi
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
 
   create_release:
-    needs: set-matrix
     runs-on: ubuntu-latest
 
     outputs:
@@ -144,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
-    needs: create_release
+    needs: [create_release, set-matrix]
     runs-on: ubuntu-latest
 
     strategy:
