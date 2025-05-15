@@ -15,10 +15,18 @@ on:
         description: 'Kernel Source Code'
         required: true
         default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
-      MANIFEST_BRANCH:
-        description: 'Kernel Manifest Branch'
+      BUILD_DEVICES:
+        description: 'Device Target'
         required: true
-        default: 'manifest'
+        default: 'mayfly'
+        type: choice
+        options:
+        - all
+        - mayfly
+        - cupid
+        - unicorn
+        - zeus
+        - gki
       MANIFEST_GIT:
         description: 'Kernel Manifest Git'
         required: true
@@ -83,6 +91,7 @@ jobs:
 
     - name: Build Environment
       run: |
+        echo "BUILD_DATE=$(TZ=Asia/Ho_Chi_Minh date +'%Y-%m%d-%H%M')" >> $GITHUB_ENV
         cd $GITHUB_WORKSPACE
         sudo apt-get update
         sudo apt-get install -y git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler rename libelf-dev dwarves wget openjdk-8-jdk
@@ -91,7 +100,7 @@ jobs:
         git config --global user.name "${{ github.actor }}"
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
         mkdir -p $GITHUB_WORKSPACE/android-kernel && cd $GITHUB_WORKSPACE/android-kernel
-        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
+        repo init --depth=1 --u ${{ github.event.inputs.KERNEL_GIT }} -b manifest
         repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
         git clone -b build --single-branch https://github.com/dopaemon/android_kernel_xiaomi_common.git build
         rm -rf .git .github .repo common
@@ -102,6 +111,40 @@ jobs:
         git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --recurse-submodules -j$(nproc --all) --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
         git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
         rm -rf ./AnyKernel3/.git
+
+    - name: Build Selected Devices NonKSU
+      if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
+      run: |
+        set -e
+        DEVICES="${{ github.event.inputs.BUILD_DEVICE }}"
+        if [[ "$DEVICES" == "all" ]]; then
+          DEVICES="mayfly cupid zeus unicorn"
+        fi
+
+        for DEVICE in $DEVICES; do
+          echo "::group::[+] Building for $DEVICE"
+          cd $GITHUB_WORKSPACE/android-kernel
+          cd ./common/
+          git reset --hard HEAD
+
+          echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
+
+          cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/"$DEVICE"_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/debugfs.config >> arch/arm64/configs/gki_defconfig
+
+          cd ../
+          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+
+          # Make flashable ZIP
+          ZIP_NAME="DoraCore-${DEVICE}-GKI-5.10-A12-${BUILD_DATE}.zip"
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
+          zip -r9 "$ZIP_NAME" *
+          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+          echo "::endgroup::"
+        done
 
     - name: Building DoraCore
       if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
@@ -141,31 +184,6 @@ jobs:
         cp -r /home/runner/work/android_kernel_xiaomi_common/android_kernel_xiaomi_common/android-kernel/out/android12-5.10/dist/Image ./
         zip -rv9 "$VERSION" *
         mv "$VERSION" $GITHUB_WORKSPACE/
-
-    # - name: Signer Flashable
-    #   if: github.event.inputs.BUILD_TARGET == 'NonKSU'
-    #   run: |
-    #    cd $GITHUB_WORKSPACE/
-    #    NRM_ZIP="$(ls DoraCore-GKI-5.10-A12.zip)"
-    #    NRM_ZIP_SIGNER="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
-    #    wget -O MinSignApk.jar https://github.com/HemanthJabalpuri/signapk/releases/download/5.0/MinSignApk.jar
-    #    chmod +x MinSignApk.jar
-    #    java -jar MinSignApk.jar "$NRM_ZIP" "$NRM_ZIP_SIGNER"
-    #    rm -rf "$NRM_ZIP"
-
-    # - name: Signer Flashable
-    #   if: github.event.inputs.BUILD_TARGET == 'KSU'
-    #   run: |
-    #    cd $GITHUB_WORKSPACE/
-    #    NRM_ZIP="DoraCore-GKI-5.10-A12.zip"
-    #    KSU_ZIP="DoraCore-GKI-5.10-A12-KSU.zip"
-    #    NRM_ZIP_SIGNER="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
-    #    KSU_ZIP_SIGNER="DoraCore-GKI-5.10-A12-KSU-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M')-signer.zip"
-    #    wget -O MinSignApk.jar https://github.com/HemanthJabalpuri/signapk/releases/download/5.0/MinSignApk.jar
-    #    chmod +x MinSignApk.jar
-    #    java -jar MinSignApk.jar "$NRM_ZIP" "$NRM_ZIP_SIGNER"
-    #    java -jar MinSignApk.jar "$KSU_ZIP" "$KSU_ZIP_SIGNER"
-    #    rm -rf "$NRM_ZIP" "$KSU_ZIP"
 
     - name: Upload to Release [Draft]
       if: github.event.inputs.PUBLIC_RELEASE == 'false'
