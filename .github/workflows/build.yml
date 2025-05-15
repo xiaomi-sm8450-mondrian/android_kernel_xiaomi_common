@@ -61,14 +61,15 @@ on:
         description: 'AnyKernel3 Branch'
         required: true
         default: 'master'
-      PUBLIC_RELEASE:
-        description: 'Stable Version ?'
+      RELEASE:
+        description: 'Status Release'
         required: true
-        default: 'false'
+        default: 'draft'
         type: choice
         options:
-        - true
-        - false
+        - draft
+        - prerelease
+        - release
 
 jobs:
   build:
@@ -191,25 +192,11 @@ jobs:
           echo "::endgroup::"
         done
 
-    - name: Upload to Release [Draft]
-      if: github.event.inputs.PUBLIC_RELEASE == 'false'
-      uses: softprops/action-gh-release@master
-      with:
-        draft: true
-        files: |
-          DoraCore*.zip
-        name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
-        tag_name: ${{ github.run_id }}
-        body: |
-          Build: DoraCore Kernel For GKI Linux 5.10.y
-          Linux: Linux 5.10.y
-          Type: GKI
-          Developer: @dopaemon
-
     - name: Upload to Release
-      if: github.event.inputs.PUBLIC_RELEASE == 'true'
       uses: softprops/action-gh-release@master
       with:
+        draft: ${{ github.event.inputs.RELEASE == 'draft' }}
+        prerelease: ${{ github.event.inputs.RELEASE == 'prerelease' }}
         files: |
           DoraCore*.zip
         name: DoraCore Kernel GKI ${{ env.BUILD_DATE }}
@@ -219,4 +206,4 @@ jobs:
           Linux: Linux 5.10.y
           Type: GKI
           Developer: @dopaemon
-          Thanks: @ztc1997, @pzqqt, @KernelToast, @Arter97, ...
+          Credits: @ArianK16a, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, ...
