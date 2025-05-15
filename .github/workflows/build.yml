@@ -126,6 +126,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel
           cd ./common/
           git reset --hard HEAD
+          rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
 
           echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
 
@@ -138,7 +139,7 @@ jobs:
           CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
           # Make flashable ZIP
-          ZIP_NAME="DoraCore-${DEVICE}-GKI-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME="DoraCore-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
           zip -r9 "$ZIP_NAME" *
@@ -146,44 +147,38 @@ jobs:
           echo "::endgroup::"
         done
 
-    - name: Building DoraCore
-      if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
-      continue-on-error: true
+    - name: Build Selected Devices KSU
+      if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both'
       run: |
-        cd $GITHUB_WORKSPACE/android-kernel
-        cd ./common/
-        echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
-        cd ../
-        CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+        set -e
+        DEVICES="${{ github.event.inputs.BUILD_DEVICE }}"
+        if [[ "$DEVICES" == "all" ]]; then
+          DEVICES="mayfly cupid zeus unicorn"
+        fi
 
-    - name: Flashable Create
-      if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
-      run: |
-        VERSION="DoraCore-GKI-5.10-A12-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
-        cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-        cp -r /home/runner/work/android_kernel_xiaomi_common/android_kernel_xiaomi_common/android-kernel/out/android12-5.10/dist/Image ./
-        zip -rv9 "$VERSION" *
-        mv "$VERSION" $GITHUB_WORKSPACE/
+        for DEVICE in $DEVICES; do
+          echo "::group::[+] Building for $DEVICE"
+          cd $GITHUB_WORKSPACE/android-kernel
+          cd ./common/
+          git reset --hard HEAD
+          rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
 
-    - name: Building DoraCore KSU
-      if: github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'KSU'
-      continue-on-error: true
-      run: |
-        cd $GITHUB_WORKSPACE/android-kernel
-        cd ./common/
-        git reset --hard HEAD
-        echo "CONFIG_KSU=y" >> arch/arm64/configs/gki_defconfig
-        cd ../
-        CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+          cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/"$DEVICE"_GKI.config >> arch/arm64/configs/gki_defconfig
+          cat arch/arm64/configs/vendor/debugfs.config >> arch/arm64/configs/gki_defconfig
 
-    - name: Flashable Create KSU
-      if: github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'KSU'
-      run: |
-        VERSION="DoraCore-GKI-5.10-A12-KSU-$(TZ=Asia/Ho_Chi_Minh date '+%Y-%m%d-%H%M').zip"
-        cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-        cp -r /home/runner/work/android_kernel_xiaomi_common/android_kernel_xiaomi_common/android-kernel/out/android12-5.10/dist/Image ./
-        zip -rv9 "$VERSION" *
-        mv "$VERSION" $GITHUB_WORKSPACE/
+          cd ../
+          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+
+          # Make flashable ZIP
+          ZIP_NAME="DoraCore-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
+          zip -r9 "$ZIP_NAME" *
+          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+          echo "::endgroup::"
+        done
 
     - name: Upload to Release [Draft]
       if: github.event.inputs.PUBLIC_RELEASE == 'false'
