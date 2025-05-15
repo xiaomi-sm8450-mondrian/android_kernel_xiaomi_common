@@ -149,7 +149,7 @@ jobs:
 
     strategy:
       matrix:
-        device: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+        device: ${{ fromJson(needs.set-matrix.outputs.matrix) }}
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
