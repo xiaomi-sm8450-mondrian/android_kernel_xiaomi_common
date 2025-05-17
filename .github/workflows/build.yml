@@ -27,6 +27,7 @@ on:
         - unicorn
         - zeus
         - diting
+        - marble
         - mondrian
         - thor
         - zizhan
@@ -92,6 +93,8 @@ jobs:
             matrix='["unicorn"]'
           elif [ "$BUILD_DEVICE" = "diting" ]; then
             matrix='["diting"]'
+          elif [ "$BUILD_DEVICE" = "marble" ]; then
+            matrix='["marble"]'
           elif [ "$BUILD_DEVICE" = "mondrian" ]; then
             matrix='["mondrian"]'
           elif [ "$BUILD_DEVICE" = "thor" ]; then
@@ -103,7 +106,7 @@ jobs:
           elif [ "$BUILD_DEVICE" = "gki" ]; then
             matrix='["gki"]'
           elif [ "$BUILD_DEVICE" = "all" ]; then
-            matrix='["mayfly", "cupid", "unicorn", "zeus", "diting", "mondrian", "thor", "zizhan", "ziyi", "gki"]'
+            matrix='["mayfly", "cupid", "unicorn", "zeus", "diting", "marble", "mondrian", "thor", "zizhan", "ziyi", "gki"]'
           fi
 
           echo "matrix=$matrix" >> $GITHUB_OUTPUT
