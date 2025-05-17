@@ -217,10 +217,8 @@ jobs:
           ZIP_NAME="DoraCore-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
-          zip -r -9 out.zip $GITHUB_WORKSPACE/android-kernel/out
           zip -r9 "$ZIP_NAME" *
           mv "$ZIP_NAME" $GITHUB_WORKSPACE/
-          mv out.zip $GITHUB_WORKSPACE/
 
       - name: Build Selected Devices NonKSU
         if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
@@ -258,9 +256,3 @@ jobs:
           files: DoraCore*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: output
-          path: out.zip
