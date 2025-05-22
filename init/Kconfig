@@ -1329,7 +1329,6 @@ config SCHED_CASS
 
 config SCHED_BORE
 	bool "Burst-Oriented Response Enhancer"
-	default y
 	help
 	  In Desktop and Mobile computing, one might prefer interactive
 	  tasks to keep responsive no matter what they run in the background.
@@ -1341,8 +1340,6 @@ config SCHED_BORE
 	  terminal emulator, video playback, games and so on.
 	  With a little impact to scheduling fairness, it may improve
 	  responsiveness especially under heavy background workload.
-
-	  If unsure, say Y here.
 
 config SCHED_AUTOGROUP
 	bool "Automatic process group scheduling"
