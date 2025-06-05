@@ -14,11 +14,11 @@ on:
       KERNEL_GIT:
         description: 'Kernel Source Code'
         required: true
-        default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
+        default: 'https://github.com/xiaomi-sm8450-mondrian/android_kernel_xiaomi_common.git'
       BUILD_DEVICE:
         description: 'Device Target'
         required: true
-        default: 'mayfly'
+        default: 'mondrian'
         type: choice
         options:
         - all
@@ -36,7 +36,7 @@ on:
       MANIFEST_GIT:
         description: 'Kernel Manifest Git'
         required: true
-        default: 'https://github.com/dopaemon/android_kernel_xiaomi_common.git'
+        default: 'https://github.com/xiaomi-sm8450-mondrian/android_kernel_xiaomi_common.git'
       CLANG_PREBUILT:
         description: 'Custom Clang Prebuilt Git'
         required: true
@@ -65,7 +65,7 @@ on:
       RELEASE:
         description: 'Status Release'
         required: true
-        default: 'draft'
+        default: 'prerelease'
         type: choice
         options:
         - draft
