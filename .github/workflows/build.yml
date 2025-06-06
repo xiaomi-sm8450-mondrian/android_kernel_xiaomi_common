@@ -229,7 +229,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=n" >> arch/arm64/configs/gki_defconfig
 
           cd ../
-          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+          CC='ccache' LTO=full BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
           # Make flashable ZIP
           ZIP_NAME="DoraCore-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
