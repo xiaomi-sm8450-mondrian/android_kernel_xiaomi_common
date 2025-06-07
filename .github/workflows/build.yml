@@ -41,11 +41,11 @@ on:
       CLANG_PREBUILT:
         description: 'Custom Clang Prebuilt Git'
         required: true
-        default: 'https://gitlab.com/vermouth/android_prebuilts_clang_host_linux-x86_clang-r536225.git'
+        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r547379.git'
       CLANG_BRANCH:
         description: 'Custom Clang Prebuilt Branch'
         required: true
-        default: '14.0'
+        default: '15.0'
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
