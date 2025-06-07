@@ -7115,10 +7115,12 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 
 		for_each_cpu_and(cpu, perf_domain_span(pd), sched_domain_span(sd)) {
 			if (!cpumask_test_cpu(cpu, p->cpus_ptr) || is_task_rotation_reserved(cpu))
+			continue;
+
 			struct rq *rq = cpu_rq(cpu);
 
 			if (!cpumask_test_cpu(cpu, p->cpus_ptr))
-				continue;
+			continue;
 
 			util = cpu_util_next(cpu, p, cpu);
 			cpu_cap = capacity_of(cpu);
@@ -7126,20 +7128,20 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu, int sy
 			lsub_positive(&spare_cap, util);
 
 			/*
-			 * Skip CPUs that cannot satisfy the capacity request.
-			 * IOW, placing the task there would make the CPU
-			 * overutilized. Take uclamp into account to see how
-			 * much capacity we can get out of the CPU; this is
-			 * aligned with schedutil_cpu_util().
-			 */
+			* Skip CPUs that cannot satisfy the capacity request.
+			* IOW, placing the task there would make the CPU
+			* overutilized. Take uclamp into account to see how
+			* much capacity we can get out of the CPU; this is
+			* aligned with schedutil_cpu_util().
+			*/
 			if (uclamp_is_used() && !uclamp_rq_is_idle(rq)) {
 				/*
-				 * Open code uclamp_rq_util_with() except for
-				 * the clamp() part. Ie: apply max aggregation
-				 * only. util_fits_cpu() logic requires to
-				 * operate on non clamped util but must use the
-				 * max-aggregated uclamp_{min, max}.
-				 */
+				* Open code uclamp_rq_util_with() except for
+				* the clamp() part. Ie: apply max aggregation
+				* only. util_fits_cpu() logic requires to
+				* operate on non clamped util but must use the
+				* max-aggregated uclamp_{min, max}.
+				*/
 				rq_util_min = uclamp_rq_get(rq, UCLAMP_MIN);
 				rq_util_max = uclamp_rq_get(rq, UCLAMP_MAX);
 
