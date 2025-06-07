@@ -58,7 +58,7 @@ on:
       ANYKERNEL_GIT:
         description: 'AnyKernel3 Git'
         required: true
-        default: 'https://github.com/dopaemon/Anykernel3.git'
+        default: 'https://github.com/keosh1/Anykernel3.git'
       ANYKERNEL_BRANCH:
         description: 'AnyKernel3 Branch'
         required: true
