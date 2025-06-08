@@ -285,7 +285,7 @@ jobs:
           echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
 
           cd ../
-          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+          CC='ccache' LTO=full BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
           # Copy standard image to AnyKernel3
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
