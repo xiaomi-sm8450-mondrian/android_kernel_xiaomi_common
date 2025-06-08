@@ -49,11 +49,12 @@ on:
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
-        default: 'KSU'
+        default: 'Selection'
         type: choice
         options:
         - NonKSU
         - KSU
+        - Selection
         - Both
       ANYKERNEL_GIT:
         description: 'AnyKernel3 Git'
@@ -193,8 +194,8 @@ jobs:
           git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
           rm -rf ./AnyKernel3/.git
 
-      - name: Build Selected Devices KSU
-        if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both'
+      - name: Build KernelSU Version
+        if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'Selection'
         run: |
           set -e
           DEVICE="${{ matrix.device }}"
@@ -204,6 +205,7 @@ jobs:
           git reset --hard HEAD
           rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
 
+          # Configure KernelSU build
           if [ "$DEVICE" != "gki" ]; then
              cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
              cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
@@ -232,15 +234,12 @@ jobs:
           cd ../
           CC='ccache' LTO=full BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
-          # Make flashable ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          # Copy KernelSU image to AnyKernel3
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
-          zip -r9 "$ZIP_NAME" *
-          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image-kernelsu
 
-      - name: Build Selected Devices NonKSU
-        if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both'
+      - name: Build Standard Version
+        if: github.event.inputs.BUILD_TARGET == 'NonKSU' || github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'Selection'
         run: |
           set -e
           DEVICE="${{ matrix.device }}"
@@ -249,8 +248,8 @@ jobs:
           cd ./common/
           git reset --hard HEAD
           rm -rf $GITHUB_WORKSPACE/android-kernel/out/android12-5.10
-          echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
 
+          # Configure standard build (without KernelSU)
           if [ "$DEVICE" != "gki" ]; then
              cat arch/arm64/configs/vendor/waipio_GKI.config >> arch/arm64/configs/gki_defconfig
              cat arch/arm64/configs/vendor/xiaomi_GKI.config >> arch/arm64/configs/gki_defconfig
@@ -258,15 +257,134 @@ jobs:
              cat arch/arm64/configs/vendor/debugfs.config >> arch/arm64/configs/gki_defconfig
           fi
 
+          echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
+
           cd ../
           CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
-          # Make flashable ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          # Copy standard image to AnyKernel3
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
-          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image
-          zip -r9 "$ZIP_NAME" *
+          cp -f $GITHUB_WORKSPACE/android-kernel/out/android12-5.10/dist/Image ./Image-standard
+
+      - name: Create Universal KernelSU Selection ZIP
+        if: github.event.inputs.BUILD_TARGET == 'Selection'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
+
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+
+          # Create single ZIP with both kernel variants
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
+          
+          # Ensure both kernel images exist
+          if [ ! -f "Image-kernelsu" ] || [ ! -f "Image-standard" ]; then
+            echo "ERROR: Missing kernel images!"
+            echo "Image-kernelsu exists: $([ -f "Image-kernelsu" ] && echo "YES" || echo "NO")"
+            echo "Image-standard exists: $([ -f "Image-standard" ] && echo "YES" || echo "NO")"
+            exit 1
+          fi
+
+          # Create the universal ZIP
+          zip -r9 "$ZIP_NAME" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log"
+          
           mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+          
+          echo "Created universal ZIP: $ZIP_NAME"
+          echo "Contains both KernelSU and standard kernel images"
+          echo "User can choose at flash time using volume keys"
+
+      - name: Create KSU-Only ZIP
+        if: github.event.inputs.BUILD_TARGET == 'KSU'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
+
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          
+          # Create KSU-only ZIP
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          cp -f Image-kernelsu Image
+          zip -r9 "$ZIP_NAME" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log" \
+            -x "Image-kernelsu" \
+            -x "Image-standard"
+          
+          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+
+      - name: Create NonKSU-Only ZIP
+        if: github.event.inputs.BUILD_TARGET == 'NonKSU'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
+
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          
+          # Create NonKSU-only ZIP
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          cp -f Image-standard Image
+          zip -r9 "$ZIP_NAME" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log" \
+            -x "Image-kernelsu" \
+            -x "Image-standard"
+          
+          mv "$ZIP_NAME" $GITHUB_WORKSPACE/
+
+      - name: Create Both Separate ZIPs
+        if: github.event.inputs.BUILD_TARGET == 'Both'
+        run: |
+          set -e
+          DEVICE="${{ matrix.device }}"
+
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          
+          # Create KSU ZIP
+          ZIP_NAME_KSU="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          cp -f Image-kernelsu Image
+          zip -r9 "$ZIP_NAME_KSU" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log" \
+            -x "Image-kernelsu" \
+            -x "Image-standard"
+          
+          # Create NonKSU ZIP
+          ZIP_NAME_NONKSU="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          cp -f Image-standard Image
+          zip -r9 "$ZIP_NAME_NONKSU" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log" \
+            -x "Image-kernelsu" \
+            -x "Image-standard"
+          
+          # Create Selection ZIP
+          ZIP_NAME_SELECTION="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
+          zip -r9 "$ZIP_NAME_SELECTION" . \
+            -x "*.git*" \
+            -x "build.sh" \
+            -x "*.md" \
+            -x ".DS_Store" \
+            -x "*.log"
+          
+          mv "$ZIP_NAME_KSU" "$ZIP_NAME_NONKSU" "$ZIP_NAME_SELECTION" $GITHUB_WORKSPACE/
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
