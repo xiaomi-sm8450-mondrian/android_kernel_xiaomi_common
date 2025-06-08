@@ -134,6 +134,16 @@ jobs:
         id: set-tag
         run: echo "tag=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
 
+      - name: Get commit information
+        id: commit-info
+        run: |
+          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "commit_message=$(git log -1 --pretty=%B | head -n 1)" >> $GITHUB_OUTPUT
+          echo "commit_author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+          echo "commit_date=$(git log -1 --pretty=%cd --date=iso)" >> $GITHUB_OUTPUT
+          echo "current_branch=$(git branch --show-current || echo 'detached')" >> $GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -147,6 +157,14 @@ jobs:
             Type: GKI
             Developer: @dopaemon
             
+            📋 Build Information:
+            • Branch: ${{ steps.commit-info.outputs.current_branch }}
+            • Commit: ${{ steps.commit-info.outputs.commit_short }}
+            • Build Date: $(date +'%Y-%m-%d %H:%M:%S UTC')
+            • Kernel Branch: ${{ github.event.inputs.KERNEL_BRANCH }}
+            • Device Target: ${{ github.event.inputs.BUILD_DEVICE }}
+            • Build Target: ${{ github.event.inputs.BUILD_TARGET }}
+            
             🔧 Features:
             • KernelSU Selection Support (Volume Keys)
             • Multiple build variants available
@@ -157,6 +175,17 @@ jobs:
             • KSU: KernelSU-enabled build only
             • NonKSU: Standard build only
             • Both: Separate builds for each variant
+            
+            📝 Last Commit:
+            • Message: ${{ steps.commit-info.outputs.commit_message }}
+            • Author: ${{ steps.commit-info.outputs.commit_author }}
+            • Date: ${{ steps.commit-info.outputs.commit_date }}
+            • Full SHA: ${{ steps.commit-info.outputs.commit_sha }}
+            
+            🔗 Source Repositories:
+            • Kernel: ${{ github.event.inputs.KERNEL_GIT }}
+            • AnyKernel3: ${{ github.event.inputs.ANYKERNEL_GIT }}
+            • Clang: ${{ github.event.inputs.CLANG_PREBUILT }}
             
             👥 Credits: @ArianK16a, @bachnxuan, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, @Gosth15, @Flopster101, @bheatleyyy, ...
         env:
@@ -206,6 +235,20 @@ jobs:
           git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
           rm -rf ./AnyKernel3/.git
           
+          # Get kernel commit information for tracking
+          echo "Getting kernel commit information..."
+          cd ./common
+          KERNEL_COMMIT=$(git rev-parse HEAD)
+          KERNEL_COMMIT_SHORT=$(git rev-parse --short HEAD)
+          KERNEL_COMMIT_MESSAGE=$(git log -1 --pretty=%B | head -n 1)
+          KERNEL_COMMIT_DATE=$(git log -1 --pretty=%cd --date=iso)
+          echo "KERNEL_COMMIT=$KERNEL_COMMIT" >> $GITHUB_ENV
+          echo "KERNEL_COMMIT_SHORT=$KERNEL_COMMIT_SHORT" >> $GITHUB_ENV
+          echo "KERNEL_COMMIT_MESSAGE=$KERNEL_COMMIT_MESSAGE" >> $GITHUB_ENV
+          echo "KERNEL_COMMIT_DATE=$KERNEL_COMMIT_DATE" >> $GITHUB_ENV
+          echo "✓ Kernel commit: $KERNEL_COMMIT_SHORT - $KERNEL_COMMIT_MESSAGE"
+          cd ../
+          
           # Ensure keycheck binary has proper permissions
           chmod 755 ./AnyKernel3/tools/keycheck
           
@@ -218,6 +261,50 @@ jobs:
             sed -i 's/KERNELSU_CHOICE="with"/KERNELSU_CHOICE="with"\n      export KERNELSU_CHOICE/g' ./AnyKernel3/META-INF/com/google/android/update-binary
             sed -i 's/KERNELSU_CHOICE="without"/KERNELSU_CHOICE="without"\n      export KERNELSU_CHOICE/g' ./AnyKernel3/META-INF/com/google/android/update-binary
           fi
+
+      - name: Create Build Info File
+        run: |
+          cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
+          
+          # Create build information file
+          cat > BUILD_INFO.txt << EOF
+          DoraCore Kernel Build Information
+          ================================
+          
+          Build Details:
+          - Build Date: $(date +'%Y-%m-%d %H:%M:%S UTC')
+          - Build ID: ${{ needs.create_release.outputs.tag }}
+          - Device Target: ${{ matrix.device }}
+          - Build Target: ${{ github.event.inputs.BUILD_TARGET }}
+          
+          Repository Information:
+          - Workflow Repository: ${{ github.repository }}
+          - Workflow Branch: ${{ github.ref_name }}
+          - Workflow Commit: ${{ github.sha }}
+          
+          Kernel Information:
+          - Kernel Repository: ${{ github.event.inputs.KERNEL_GIT }}
+          - Kernel Branch: ${{ github.event.inputs.KERNEL_BRANCH }}
+          - Kernel Commit: ${KERNEL_COMMIT}
+          - Kernel Commit Message: ${KERNEL_COMMIT_MESSAGE}
+          - Kernel Commit Date: ${KERNEL_COMMIT_DATE}
+          
+          AnyKernel3 Information:
+          - AnyKernel3 Repository: ${{ github.event.inputs.ANYKERNEL_GIT }}
+          - AnyKernel3 Branch: ${{ github.event.inputs.ANYKERNEL_BRANCH }}
+          
+          Toolchain Information:
+          - Clang Repository: ${{ github.event.inputs.CLANG_PREBUILT }}
+          - Clang Branch: ${{ github.event.inputs.CLANG_BRANCH }}
+          
+          Build Configuration:
+          - Linux Version: 5.10.y
+          - Android Version: 12
+          - Build Type: GKI
+          - KernelSU Selection: Enabled
+          EOF
+          
+          echo "✓ Created BUILD_INFO.txt with build details"
 
       - name: Build KernelSU Version
         if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'Selection'
@@ -285,7 +372,7 @@ jobs:
           echo "CONFIG_KSU=n" >> arch/arm64/configs/gki_defconfig
 
           cd ../
-          CC='ccache' LTO=full BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
+          CC='ccache' LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh -j$(nproc --all)
 
           # Copy standard image to AnyKernel3
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
@@ -300,7 +387,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
 
           # Create single ZIP with both kernel variants
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           
           # Ensure both kernel images exist
           if [ ! -f "Image-kernelsu" ] || [ ! -f "Image-standard" ]; then
@@ -343,7 +430,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create KSU-only ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           cp -f Image-kernelsu Image
           zip -r9 "$ZIP_NAME" . \
             -x "*.git*" \
@@ -365,7 +452,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create NonKSU-only ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           cp -f Image-standard Image
           zip -r9 "$ZIP_NAME" . \
             -x "*.git*" \
@@ -387,7 +474,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create KSU ZIP
-          ZIP_NAME_KSU="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME_KSU="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           cp -f Image-kernelsu Image
           zip -r9 "$ZIP_NAME_KSU" . \
             -x "*.git*" \
@@ -399,7 +486,7 @@ jobs:
             -x "Image-standard"
           
           # Create NonKSU ZIP
-          ZIP_NAME_NONKSU="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME_NONKSU="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           cp -f Image-standard Image
           zip -r9 "$ZIP_NAME_NONKSU" . \
             -x "*.git*" \
@@ -411,7 +498,7 @@ jobs:
             -x "Image-standard"
           
           # Create Selection ZIP
-          ZIP_NAME_SELECTION="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
+          ZIP_NAME_SELECTION="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
           zip -r9 "$ZIP_NAME_SELECTION" . \
             -x "*.git*" \
             -x "build.sh" \
