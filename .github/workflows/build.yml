@@ -146,7 +146,19 @@ jobs:
             Linux: Linux 5.10.y
             Type: GKI
             Developer: @dopaemon
-            Credits: @ArianK16a, @bachnxuan, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, @Gosth15, @Flopster101, @bheatleyyy, ...
+            
+            🔧 Features:
+            • KernelSU Selection Support (Volume Keys)
+            • Multiple build variants available
+            • Enhanced error handling and debugging
+            
+            📦 Build Types:
+            • Selection: Choose KernelSU/Standard at flash time
+            • KSU: KernelSU-enabled build only
+            • NonKSU: Standard build only
+            • Both: Separate builds for each variant
+            
+            👥 Credits: @ArianK16a, @bachnxuan, @Gelbpunkt, @ztc1997, @pzqqt, @KernelToast, @Arter97, @ramabondanp, @Gosth15, @Flopster101, @bheatleyyy, ...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -193,6 +205,19 @@ jobs:
           git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/cupid-development/android_kernel_xiaomi_sm8450-devicetrees sm8450-devicetrees
           git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
           rm -rf ./AnyKernel3/.git
+          
+          # Ensure keycheck binary has proper permissions
+          chmod 755 ./AnyKernel3/tools/keycheck
+          
+          # Verify KernelSU Selection fixes are present
+          echo "Verifying KernelSU Selection mechanism..."
+          if grep -q "export KERNELSU_CHOICE" ./AnyKernel3/META-INF/com/google/android/update-binary; then
+            echo "✓ KernelSU Selection fixes verified in AnyKernel3 scripts"
+          else
+            echo "⚠️ Warning: KernelSU Selection fixes not found, applying emergency patch..."
+            sed -i 's/KERNELSU_CHOICE="with"/KERNELSU_CHOICE="with"\n      export KERNELSU_CHOICE/g' ./AnyKernel3/META-INF/com/google/android/update-binary
+            sed -i 's/KERNELSU_CHOICE="without"/KERNELSU_CHOICE="without"\n      export KERNELSU_CHOICE/g' ./AnyKernel3/META-INF/com/google/android/update-binary
+          fi
 
       - name: Build KernelSU Version
         if: github.event.inputs.BUILD_TARGET == 'KSU' || github.event.inputs.BUILD_TARGET == 'Both' || github.event.inputs.BUILD_TARGET == 'Selection'
@@ -282,6 +307,15 @@ jobs:
             echo "ERROR: Missing kernel images!"
             echo "Image-kernelsu exists: $([ -f "Image-kernelsu" ] && echo "YES" || echo "NO")"
             echo "Image-standard exists: $([ -f "Image-standard" ] && echo "YES" || echo "NO")"
+            ls -la Image*
+            exit 1
+          fi
+          
+          # Verify kernel images are not empty
+          if [ ! -s "Image-kernelsu" ] || [ ! -s "Image-standard" ]; then
+            echo "ERROR: Kernel images are empty!"
+            echo "Image-kernelsu size: $(stat --printf="%s" Image-kernelsu 2>/dev/null || echo "0") bytes"
+            echo "Image-standard size: $(stat --printf="%s" Image-standard 2>/dev/null || echo "0") bytes"
             exit 1
           fi
 
@@ -295,9 +329,10 @@ jobs:
           
           mv "$ZIP_NAME" $GITHUB_WORKSPACE/
           
-          echo "Created universal ZIP: $ZIP_NAME"
-          echo "Contains both KernelSU and standard kernel images"
-          echo "User can choose at flash time using volume keys"
+          echo "✓ Created universal ZIP: $ZIP_NAME"
+          echo "✓ Contains both KernelSU and standard kernel images"
+          echo "✓ Selection mechanism enabled with volume keys"
+          echo "✓ ZIP size: $(stat --printf="%s" $GITHUB_WORKSPACE/$ZIP_NAME) bytes"
 
       - name: Create KSU-Only ZIP
         if: github.event.inputs.BUILD_TARGET == 'KSU'
@@ -385,6 +420,41 @@ jobs:
             -x "*.log"
           
           mv "$ZIP_NAME_KSU" "$ZIP_NAME_NONKSU" "$ZIP_NAME_SELECTION" $GITHUB_WORKSPACE/
+
+      - name: Validate Built ZIPs
+        run: |
+          echo "Validating built ZIP files..."
+          cd $GITHUB_WORKSPACE
+          
+          for zip_file in DoraCore*.zip; do
+            if [ -f "$zip_file" ]; then
+              echo "✓ Found: $zip_file"
+              echo "  Size: $(stat --printf="%s" "$zip_file") bytes"
+              
+              # Test ZIP integrity
+              if unzip -t "$zip_file" >/dev/null 2>&1; then
+                echo "  ✓ ZIP integrity OK"
+              else
+                echo "  ✗ ZIP integrity FAILED"
+                exit 1
+              fi
+              
+              # Check if Selection ZIP contains both kernel images
+              if [[ "$zip_file" == *"Selection"* ]]; then
+                if unzip -l "$zip_file" | grep -q "Image-kernelsu" && unzip -l "$zip_file" | grep -q "Image-standard"; then
+                  echo "  ✓ Selection ZIP contains both kernel images"
+                else
+                  echo "  ✗ Selection ZIP missing kernel images"
+                  unzip -l "$zip_file" | grep "Image"
+                  exit 1
+                fi
+              fi
+            else
+              echo "✗ Missing: $zip_file"
+            fi
+          done
+          
+          echo "All ZIP validation checks passed!"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
