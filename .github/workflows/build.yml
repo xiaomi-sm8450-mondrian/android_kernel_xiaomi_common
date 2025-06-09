@@ -387,7 +387,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
 
           # Create single ZIP with both kernel variants
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
           
           # Ensure both kernel images exist
           if [ ! -f "Image-kernelsu" ] || [ ! -f "Image-standard" ]; then
@@ -430,7 +430,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create KSU-only ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
           cp -f Image-kernelsu Image
           zip -r9 "$ZIP_NAME" . \
             -x "*.git*" \
@@ -452,7 +452,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create NonKSU-only ZIP
-          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
           cp -f Image-standard Image
           zip -r9 "$ZIP_NAME" . \
             -x "*.git*" \
@@ -474,7 +474,7 @@ jobs:
           cd $GITHUB_WORKSPACE/android-kernel/AnyKernel3
           
           # Create KSU ZIP
-          ZIP_NAME_KSU="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME_KSU="DoraCore(keosh)-${DEVICE}-KSU-5.10-A12-${BUILD_DATE}.zip"
           cp -f Image-kernelsu Image
           zip -r9 "$ZIP_NAME_KSU" . \
             -x "*.git*" \
@@ -486,7 +486,7 @@ jobs:
             -x "Image-standard"
           
           # Create NonKSU ZIP
-          ZIP_NAME_NONKSU="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME_NONKSU="DoraCore(keosh)-${DEVICE}-NonKSU-5.10-A12-${BUILD_DATE}.zip"
           cp -f Image-standard Image
           zip -r9 "$ZIP_NAME_NONKSU" . \
             -x "*.git*" \
@@ -498,7 +498,7 @@ jobs:
             -x "Image-standard"
           
           # Create Selection ZIP
-          ZIP_NAME_SELECTION="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}-${KERNEL_COMMIT_SHORT}.zip"
+          ZIP_NAME_SELECTION="DoraCore(keosh)-${DEVICE}-KernelSU-Selection-5.10-A12-${BUILD_DATE}.zip"
           zip -r9 "$ZIP_NAME_SELECTION" . \
             -x "*.git*" \
             -x "build.sh" \
