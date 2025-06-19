@@ -41,11 +41,11 @@ on:
       CLANG_PREBUILT:
         description: 'Custom Clang Prebuilt Git'
         required: true
-        default: 'https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r547379.git'
+        default: 'https://codeberg.org/keosh/caf-clang-21.git'
       CLANG_BRANCH:
         description: 'Custom Clang Prebuilt Branch'
         required: true
-        default: '15.0'
+        default: '21'
       BUILD_TARGET:
         description: 'Specify your Build Target'
         required: true
@@ -231,7 +231,7 @@ jobs:
           chmod +x ./build/_setup_env.sh
           git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} --recurse-submodules -j$(nproc --all) --depth=1 --single-branch ${{ github.event.inputs.KERNEL_GIT }} ./common
           git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/LineageOS/android_kernel_xiaomi_sm8450-modules sm8450-modules
-          git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/LineageOS/android_kernel_xiaomi_sm8450-devicetrees.git sm8450-devicetrees
+          git clone -b lineage-22.2 --single-branch --depth=1 https://github.com/LineageOS/android_kernel_xiaomi_sm8450-devicetrees sm8450-devicetrees
           git clone -b ${{ github.event.inputs.ANYKERNEL_BRANCH }} --depth=1 --single-branch ${{ github.event.inputs.ANYKERNEL_GIT }} ./AnyKernel3
           rm -rf ./AnyKernel3/.git
           
